@@ -601,6 +601,29 @@ body.dui-mode .menu-container {
 .status-pill.on  { color: rgb(var(--theme)); background: rgba(var(--theme), 0.12); border: 1px solid rgba(var(--theme), 0.3); }
 .status-pill.off { color: var(--text-muted); background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); }
 
+/* ───────── Inline Bind Badge (F11 universal keybind) ───────── */
+.bind-badge {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(var(--theme), 0.25);
+    border-radius: 6px;
+    padding: 2px 7px;
+    margin-right: 8px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    z-index: 2;
+}
+.menu-item.active .bind-badge { color: #fff; border-color: rgba(var(--theme), 0.55); }
+.bind-badge.listening {
+    color: rgb(var(--theme));
+    border-color: rgb(var(--theme));
+    box-shadow: 0 0 12px rgba(var(--theme), 0.5);
+    animation: kbPulse 0.9s ease-in-out infinite;
+}
+
 /* ───────── Keybind Badge ───────── */
 .keybind-badge {
     font-size: 10.5px;
@@ -1052,8 +1075,18 @@ body.dui-mode .menu-container {
                 nameHtml = '<span class="item-name">' + esc(item.label) + '</span>';
             }
 
+            // Optional keybind badge (shown when a feature is bound, or while
+            // listening for a key after F11). Appears just left of the control.
+            var bindHtml = "";
+            if (item.listening) {
+                bindHtml = '<span class="bind-badge listening">[ press key ]</span>';
+            } else if (item.bind) {
+                bindHtml = '<span class="bind-badge">' + esc(item.bind) + '</span>';
+            }
+
             var cls = "menu-item" + (item.type === "info" ? " is-info" : "");
-            return '<div class="' + cls + '" data-index="' + i + '">' + iconHtml + nameHtml + right + '</div>';
+            return '<div class="' + cls + '" data-index="' + i + '">' +
+                   iconHtml + nameHtml + bindHtml + right + '</div>';
         }
 
         function render(items, activeIdx, animateDir, onReady) {
@@ -1150,6 +1183,24 @@ body.dui-mode .menu-container {
                     kb.textContent = item.listening ? "..." : (item.keyStr || "—");
                 }
             }
+
+            /* Generic inline bind badge (F11 universal keybind selector). */
+            if (item.type === "toggle" || item.type === "action") {
+                var existing = node.querySelector(".bind-badge");
+                var wantText = item.listening ? "[ press key ]" : (item.bind || null);
+                if (wantText) {
+                    if (!existing) {
+                        existing = document.createElement("span");
+                        existing.className = "bind-badge";
+                        var ctrl = node.querySelector(".toggle-switch, .item-arrow");
+                        node.insertBefore(existing, ctrl || null);
+                    }
+                    existing.textContent = wantText;
+                    existing.classList.toggle("listening", !!item.listening);
+                } else if (existing) {
+                    existing.parentNode.removeChild(existing);
+                }
+            }
         }
 
         function pressFeedback(index) {
@@ -1239,6 +1290,17 @@ body.dui-mode .menu-container {
             dom.container.classList.toggle("hidden", !visible);
         }
 
+        /* ---- Screen position (Lua position sliders, % of viewport) ---- */
+        function setPosition(x, y) {
+            if (!dom.container) return;
+            var px = Math.max(0, Math.min(95, Number(x) || 0));
+            var py = Math.max(0, Math.min(95, Number(y) || 0));
+            dom.container.style.left = px + "vw";
+            dom.container.style.top = py + "vh";
+            dom.container.style.right = "auto";
+            dom.container.style.bottom = "auto";
+        }
+
         /* ---- Toast notifications ---- */
         function notify(opts) {
             if (!dom.toastStack) return;
@@ -1275,6 +1337,7 @@ body.dui-mode .menu-container {
             render: render, setActive: setActive, updateItem: updateItem,
             pressFeedback: pressFeedback, flashArrow: flashArrow,
             renderTabs: renderTabs, setHeader: setHeader, setVisible: setVisible,
+            setPosition: setPosition,
             notify: notify, updateScrollbar: updateScrollbar,
             isTransitioning: isTransitioning, items: items, getActive: getActive
         };
@@ -1323,6 +1386,9 @@ body.dui-mode .menu-container {
                 if (msg.rainbow === true) Theme.startRainbow();
                 else if (msg.rainbow === false) { Theme.stopRainbow(); if (msg.r != null) Theme.set(msg.r, msg.g, msg.b); }
                 else Theme.set(msg.r, msg.g, msg.b);
+                break;
+            case "solaris:setPosition":
+                View.setPosition(msg.x, msg.y);
                 break;
             case "solaris:notify":
                 View.notify(msg);
