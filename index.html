@@ -73,14 +73,13 @@ body.dui-mode .menu-container {
     left: 8vw;
     width: 440px;
     border-radius: var(--radius);
-    /* Glassy frosted panel — much lighter than the old near-black box */
+    /* Solid translucent panel. NO backdrop-filter: in a transparent DUI texture
+       blur() has nothing to sample and renders as an opaque BLACK rectangle. */
     background: linear-gradient(
         160deg,
-        rgba(26, 20, 34, 0.62) 0%,
-        rgba(14, 10, 18, 0.58) 100%
+        rgba(24, 18, 32, 0.90) 0%,
+        rgba(12, 9, 16, 0.92) 100%
     );
-    backdrop-filter: blur(34px) saturate(1.5);
-    -webkit-backdrop-filter: blur(34px) saturate(1.5);
     border: 1px solid rgba(var(--theme), 0.22);
     box-shadow:
         inset 0 1px 0 rgba(255,255,255,0.06),
@@ -644,11 +643,11 @@ body.dui-mode .menu-container {
     gap: 12px;
     padding: 12px 16px;
     border-radius: 12px;
-    background: rgba(var(--bg), 0.92);
-    backdrop-filter: blur(22px) saturate(1.4);
+    /* Solid bg — no backdrop-filter (renders black in transparent DUI texture) */
+    background: linear-gradient(160deg, rgba(24, 18, 32, 0.95) 0%, rgba(12, 9, 16, 0.96) 100%);
     border: 1px solid rgba(var(--theme), 0.18);
     border-left: 3px solid rgb(var(--theme));
-    box-shadow: 0 12px 40px rgba(0,0,0,0.6), 0 0 40px -10px rgba(var(--theme), 0.4);
+    box-shadow: 0 0 30px -8px rgba(var(--theme), 0.4);
     color: var(--text-primary);
     transform: translateX(120%);
     opacity: 0;
@@ -699,7 +698,6 @@ body.dui-mode .menu-container {
     justify-content: center;
     align-items: center;
     background: rgba(0,0,0,0.6);
-    backdrop-filter: blur(8px);
     z-index: 1000;
     transition: opacity 0.4s ease;
 }
@@ -712,7 +710,6 @@ body.dui-mode .menu-container {
 .loader-box {
     width: 260px;
     background: rgba(var(--bg), 0.9);
-    backdrop-filter: blur(20px);
     border: 1px solid rgba(var(--theme), 0.2);
     border-radius: var(--radius);
     padding: 24px;
