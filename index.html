@@ -55,8 +55,8 @@ body.dui-mode .loader-overlay {
     display: none !important;
 }
 body.dui-mode .menu-container {
-    top: 10vh;
-    left: 3vw;
+    top: 5vh;
+    left: 2vw;
 }
 
 /* Hidden state — Lua toggles this via the bridge */
@@ -73,12 +73,13 @@ body.dui-mode .menu-container {
     left: 8vw;
     width: 440px;
     border-radius: var(--radius);
-    background: rgba(var(--bg), 0.88);
+    background: rgba(var(--bg), 0.92);
     backdrop-filter: blur(30px) saturate(1.4);
+    /* Removed heavy black drop-shadow; keep only the subtle theme glow */
     box-shadow:
-        0 30px 70px rgba(0,0,0,0.8),
-        0 0 80px -10px rgba(var(--theme), 0.15),
-        0 0 120px -20px rgba(var(--theme), 0.08);
+        0 0 0 1px rgba(var(--theme), 0.18),
+        0 0 60px -10px rgba(var(--theme), 0.22),
+        0 8px 32px rgba(0,0,0,0.45);
     overflow: visible;
     color: var(--text-primary);
     display: flex;
