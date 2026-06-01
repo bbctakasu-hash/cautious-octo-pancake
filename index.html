@@ -71,12 +71,16 @@ body.dui-mode .menu-container {
     top: 0;
     left: 0;
     width: 100%;
-    max-width: 440px;
-    font-size: 13px;
+    max-width: none;
+    font-size: 14px;
     animation: none;
     opacity: 1 !important;
+    border: none !important;
+    box-shadow: none !important;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     text-rendering: geometricPrecision;
+    image-rendering: -webkit-optimize-contrast;
 }
 body.dui-mode .menu-container:not(.hidden) {
     transform: scale(1) translateY(0) !important;
@@ -99,8 +103,8 @@ body.dui-mode .menu-container:not(.hidden) {
     width: 440px;
     border-radius: 8px;
     background: #02040A;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    box-shadow: 0 0 10px rgba(15, 98, 254, 0.15);
+    border: none;
+    box-shadow: none;
     overflow: visible;
     color: var(--text-primary);
     display: flex;
@@ -225,7 +229,6 @@ body.dui-mode .menu-container:not(.hidden) {
     to {
         transform: translateX(-22px) scale(0.97);
         opacity: 0;
-        filter: blur(5px);
     }
 }
 
@@ -233,7 +236,6 @@ body.dui-mode .menu-container:not(.hidden) {
     to {
         transform: translateX(22px) scale(0.97);
         opacity: 0;
-        filter: blur(5px);
     }
 }
 
@@ -241,12 +243,10 @@ body.dui-mode .menu-container:not(.hidden) {
     from {
         transform: translateX(28px) scale(0.965);
         opacity: 0;
-        filter: blur(6px);
     }
     to {
         transform: translateX(0) scale(1);
         opacity: 1;
-        filter: blur(0);
     }
 }
 
@@ -254,12 +254,10 @@ body.dui-mode .menu-container:not(.hidden) {
     from {
         transform: translateX(-28px) scale(0.965);
         opacity: 0;
-        filter: blur(6px);
     }
     to {
         transform: translateX(0) scale(1);
         opacity: 1;
-        filter: blur(0);
     }
 }
 
@@ -961,35 +959,43 @@ body.dui-mode .menu-container:not(.hidden) {
     padding: 10px 0;
 }
 
-/* ───────── Watermark ───────── */
+/* ───────── HUD widgets (each pill is its own draggable layer) ───────── */
 .watermark-container {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    display: flex;
-    gap: 8px;
-    z-index: 9999;
-    pointer-events: none;
+    display: contents;
 }
 
-
+body.watermark-hidden .watermark-pill {
+    display: none !important;
+}
 
 .watermark-pill {
-    display: flex;
+    position: fixed;
+    z-index: 10000;
+    display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 7px 12px;
-    border-radius: 12px;
-    background: rgba(22, 18, 32, 0.75); /* Darker tint of blue/purple with alpha */
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.04);
-    color: #cfcfcf;
+    gap: 6px;
+    padding: 2px 4px;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: none;
+    color: #e8e8e8;
     font-family: 'Segoe UI', Tahoma, sans-serif;
     font-size: 13px;
     font-weight: 700;
     letter-spacing: 0.2px;
+    pointer-events: auto;
+    cursor: move;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.watermark-pill.is-dragging {
+    cursor: grabbing;
+    opacity: 0.92;
 }
 
 .watermark-pill .wm-icon {
@@ -1004,35 +1010,21 @@ body.dui-mode .menu-container:not(.hidden) {
 }
 
 .watermark-pill .wm-highlight {
-    background: linear-gradient(
-        to right,
-        #ffffff 0%,
-        rgba(var(--theme), 0.7) 25%,
-        #ffffff 50%,
-        rgba(var(--theme), 0.7) 75%,
-        #ffffff 100%
-    );
-    background-size: 200% auto;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: textShine 5s linear infinite;
+    color: #ffffff;
     font-weight: 800;
 }
 
 .watermark-pill .wm-green {
-    background: linear-gradient(
-        to right,
-        #2ecc71 0%,
-        #82ffb6 25%,
-        #2ecc71 50%,
-        #82ffb6 75%,
-        #2ecc71 100%
-    );
-    background-size: 200% auto;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: textShine 5s linear infinite;
+    color: #2ecc71;
     font-weight: 800;
+}
+
+body.dui-mode .watermark-pill .wm-highlight {
+    color: #ffffff;
+}
+
+body.dui-mode .watermark-pill .wm-green {
+    color: #2ecc71;
 }
 
 </style>
@@ -1041,29 +1033,29 @@ body.dui-mode .menu-container:not(.hidden) {
 <body>
     <!-- Watermarks -->
     <div class="watermark-container">
-        <div class="watermark-pill">
+        <div class="watermark-pill" data-wm="hotkeys">
             <svg class="wm-icon" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="32" y="64" width="192" height="128" rx="16" stroke-width="20"></rect><line x1="68" y1="112" x2="68" y2="112" stroke-width="24"></line><line x1="108" y1="112" x2="108" y2="112" stroke-width="24"></line><line x1="148" y1="112" x2="148" y2="112" stroke-width="24"></line><line x1="188" y1="112" x2="188" y2="112" stroke-width="24"></line><line x1="96" y1="152" x2="160" y2="152" stroke-width="20"></line></svg>
             <span class="wm-highlight">Hotkeys</span>
         </div>
-        <div class="watermark-pill">
+        <div class="watermark-pill" data-wm="brand">
             <svg class="wm-icon" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"><path d="M152,208V160a8,8,0,0,0-8-8H112a8,8,0,0,0-8,8v48"></path><path d="M224,115.5V208a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V115.5a16,16,0,0,1,5.2-11.8l80-75.5a16,16,0,0,1,21.6,0l80,75.5A16,16,0,0,1,224,115.5Z"></path></svg>
-            <span class="wm-highlight">Solaris</span>
+            <span class="wm-highlight" id="wm-brand-text">Solaris</span>
         </div>
-        <div class="watermark-pill">
+        <div class="watermark-pill" data-wm="user">
             <svg class="wm-icon" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"><circle cx="128" cy="96" r="64"></circle><path d="M31,216a112,112,0,0,1,194,0"></path></svg>
-            <span class="wm-highlight">Nevyhua</span>
+            <span class="wm-highlight" id="wm-user-text">User</span>
         </div>
-        <div class="watermark-pill">
+        <div class="watermark-pill" data-wm="release">
             <svg class="wm-icon" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"><circle cx="128" cy="128" r="44"></circle><path d="M183.7,65.1q3.8,3.5,7.2,7.2l27.3-3.9a103.2,103.2,0,0,1,10.2,24.6l-25.6,10.6a88.1,88.1,0,0,1,0,52.8l25.6,10.6a103.2,103.2,0,0,1-10.2,24.6l-27.3-3.9q-3.4,3.7-7.2,7.2l-3.9,27.3a103.2,103.2,0,0,1-24.6,10.2l-10.6-25.6a88.1,88.1,0,0,1-52.8,0l-10.6,25.6a103.2,103.2,0,0,1-24.6-10.2l-3.9-27.3q-3.8-3.5-7.2-7.2l-27.3,3.9a103.2,103.2,0,0,1-10.2-24.6l25.6-10.6a88.1,88.1,0,0,1,0-52.8L12,96.8A103.2,103.2,0,0,1,22.2,72.2l27.3,3.9q3.4-3.7,7.2-7.2l3.9-27.3a103.2,103.2,0,0,1,24.6-10.2l10.6,25.6a88.1,88.1,0,0,1,52.8,0l10.6-25.6a103.2,103.2,0,0,1,24.6,10.2Z"></path></svg>
-            <span class="wm-highlight">Release</span>
+            <span class="wm-highlight" id="wm-release-text">Release</span>
         </div>
-        <div class="watermark-pill">
+        <div class="watermark-pill" data-wm="fps">
             <svg class="wm-icon" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"><rect x="32" y="48" width="192" height="128" rx="16"></rect><line x1="128" y1="176" x2="128" y2="216"></line><line x1="88" y1="216" x2="168" y2="216"></line></svg>
-            <span class="wm-green">84</span> fps
+            <span class="wm-green" id="wm-fps-text">0</span> fps
         </div>
-        <div class="watermark-pill">
+        <div class="watermark-pill" data-wm="ping">
             <svg class="wm-icon" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="200" y1="40" x2="200" y2="216" stroke-width="24"></line><line x1="144" y1="96" x2="144" y2="216" stroke-width="24"></line><line x1="88" y1="152" x2="88" y2="216" stroke-width="24"></line><line x1="32" y1="192" x2="32" y2="216" stroke-width="24"></line></svg>
-            <span class="wm-green">14</span> Ping
+            <span class="wm-green" id="wm-ping-text">0</span> Ping
         </div>
     </div>
 
@@ -1815,13 +1807,22 @@ body.dui-mode .menu-container:not(.hidden) {
                open/close animation. ---- */
         function setScale(scale) {
             if (!dom.container) return;
+            /* In-game DUI: Lua DrawSprite handles size — CSS scale blurs the texture */
+            if (document.body.classList.contains("dui-mode")) {
+                dom.container.style.zoom = "";
+                dom.container.style.transform = "";
+                return;
+            }
             var s = Number(scale);
             if (!s || s <= 0) s = 1;
             s = Math.max(0.6, Math.min(1.6, s));
-            /* transform scale is sharper than CSS zoom in CEF/DUI textures */
             dom.container.style.zoom = "";
             dom.container.style.transform = "scale(" + s + ")";
             dom.container.style.transformOrigin = "top left";
+        }
+
+        function setWatermarkVisible(visible) {
+            document.body.classList.toggle("watermark-hidden", !visible);
         }
 
         /* ---- Toast notifications ---- */
@@ -1857,6 +1858,7 @@ body.dui-mode .menu-container:not(.hidden) {
             pressFeedback: pressFeedback, flashArrow: flashArrow,
             renderTabs: renderTabs, setHeader: setHeader, setVisible: setVisible,
             setPosition: setPosition, setScale: setScale, setScrollMode: setScrollMode,
+            setWatermarkVisible: setWatermarkVisible,
             notify: notify, updateScrollbar: updateScrollbar,
             isTransitioning: isTransitioning, items: items, getActive: getActive
         };
@@ -1927,6 +1929,27 @@ body.dui-mode .menu-container:not(.hidden) {
                 break;
             case "solaris:setScale":
                 View.setScale(msg.scale);
+                break;
+            case "solaris:setWatermark":
+                View.setWatermarkVisible(msg.visible !== false);
+                break;
+            case "solaris:setHudStats":
+                if (msg.fps != null) {
+                    var fpsEl = document.getElementById("wm-fps-text");
+                    if (fpsEl) fpsEl.textContent = String(msg.fps);
+                }
+                if (msg.ping != null) {
+                    var pingEl = document.getElementById("wm-ping-text");
+                    if (pingEl) pingEl.textContent = String(msg.ping);
+                }
+                if (msg.user != null) {
+                    var userEl = document.getElementById("wm-user-text");
+                    if (userEl) userEl.textContent = String(msg.user);
+                }
+                if (msg.release != null) {
+                    var relEl = document.getElementById("wm-release-text");
+                    if (relEl) relEl.textContent = String(msg.release);
+                }
                 break;
             case "solaris:setScrollMode":
                 View.setScrollMode(msg.mode != null ? msg.mode : 2);
@@ -2238,55 +2261,96 @@ body.dui-mode .menu-container:not(.hidden) {
         return false;
     }
 
-    function makeDraggable(el) {
-        if (!el) return;
+    function wmStorageKey(id) {
+        return "solaris_wm_pos_" + id;
+    }
+
+    function saveWidgetPosition(el, id) {
+        if (!el || !id) return;
+        try {
+            var rect = el.getBoundingClientRect();
+            localStorage.setItem(wmStorageKey(id), JSON.stringify({
+                left: Math.round(rect.left),
+                top: Math.round(rect.top)
+            }));
+        } catch (e) { /* ignore */ }
+    }
+
+    function applyWidgetPosition(el, pos) {
+        if (!el || !pos) return;
+        el.style.position = "fixed";
+        el.style.right = "auto";
+        el.style.bottom = "auto";
+        el.style.margin = "0";
+        el.style.left = (pos.left != null ? pos.left : 16) + "px";
+        el.style.top = (pos.top != null ? pos.top : 16) + "px";
+    }
+
+    function makeDraggable(el, id) {
+        if (!el || !id) return;
         var isDragging = false;
         var startX, startY, initialX, initialY;
 
-        el.style.pointerEvents = "auto";
-        el.style.userSelect = "none";
-
         el.addEventListener("mousedown", function(e) {
-            if (e.target.tagName === "INPUT" || e.target.tagName === "BUTTON") return;
+            if (e.button !== 0) return;
             isDragging = true;
+            el.classList.add("is-dragging");
             startX = e.clientX;
             startY = e.clientY;
             var rect = el.getBoundingClientRect();
             initialX = rect.left;
             initialY = rect.top;
-            
             el.style.position = "fixed";
-            el.style.zIndex = "10000";
-            el.style.right = 'auto';
-            el.style.bottom = 'auto';
+            el.style.zIndex = "10001";
+            el.style.right = "auto";
+            el.style.bottom = "auto";
             el.style.left = initialX + "px";
             el.style.top = initialY + "px";
-            el.style.margin = "0";
-            
             e.preventDefault();
         });
 
         document.addEventListener("mousemove", function(e) {
             if (!isDragging) return;
-            var dx = e.clientX - startX;
-            var dy = e.clientY - startY;
-            el.style.left = (initialX + dx) + "px";
-            el.style.top = (initialY + dy) + "px";
+            el.style.left = (initialX + (e.clientX - startX)) + "px";
+            el.style.top = (initialY + (e.clientY - startY)) + "px";
         });
 
         document.addEventListener("mouseup", function() {
+            if (!isDragging) return;
             isDragging = false;
+            el.classList.remove("is-dragging");
+            saveWidgetPosition(el, id);
         });
+    }
+
+    function initWatermarkWidgets() {
+        var defaults = {
+            hotkeys: { left: 24, top: 18 },
+            brand:   { left: 130, top: 18 },
+            user:    { left: 230, top: 18 },
+            release: { left: 360, top: 18 },
+            fps:     { left: 500, top: 18 },
+            ping:    { left: 610, top: 18 }
+        };
+        var pills = document.querySelectorAll(".watermark-pill");
+        for (var i = 0; i < pills.length; i++) {
+            var pill = pills[i];
+            var id = pill.getAttribute("data-wm") || ("wm" + i);
+            var saved = null;
+            try {
+                var raw = localStorage.getItem(wmStorageKey(id));
+                if (raw) saved = JSON.parse(raw);
+            } catch (e) { /* ignore */ }
+            applyWidgetPosition(pill, saved || defaults[id] || { left: 24 + i * 96, top: 18 });
+            makeDraggable(pill, id);
+        }
     }
 
     document.addEventListener("DOMContentLoaded", function () {
         cacheDom();
         dom.list.addEventListener("scroll", function () { View.updateScrollbar(); });
 
-        var pills = document.querySelectorAll(".watermark-pill");
-        for (var i = 0; i < pills.length; i++) {
-            makeDraggable(pills[i]);
-        }
+        initWatermarkWidgets();
 
         /* Normal browser / file = preview UI. FiveM CitizenFX = in-game DUI (transparent). */
         var forcePreview = /[?&]preview=1\b/.test(window.location.search)
