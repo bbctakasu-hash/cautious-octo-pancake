@@ -18,17 +18,18 @@
     --item-radius: 10px;
     --glow-soft: 0 0 40px -8px rgba(var(--theme), 0.3);
     --glow-strong: 0 0 60px -5px rgba(var(--theme), 0.45);
-    /* Vanity-style glass — same opacity tier on panel, selector, and rail (~76%) */
-    --menu-alpha: 0.76;
-    --panel-bg: rgba(12, 14, 18, var(--menu-alpha));
-    --panel-bg-soft: rgba(8, 10, 14, 0.72);
-    --panel-footer: rgba(6, 8, 12, 0.82);
-    --sel-left: rgba(4, 23, 89, 0.72);
-    --sel-mid: rgba(2, 12, 44, 0.65);
-    --sel-deep: rgba(1, 6, 20, 0.55);
-    --sel-right: rgba(0, 0, 0, 0.38);
-    --sel-bar: rgba(3, 123, 252, 0.88);
-    --sel-top-bar: rgba(0, 102, 204, 0.82);
+    /* Panel ~85% solid; selector highlight ~80% transparent (20% fill) */
+    --menu-alpha: 0.85;
+    --panel-bg: rgba(10, 12, 16, var(--menu-alpha));
+    --panel-bg-soft: rgba(8, 10, 14, 0.85);
+    --panel-footer: rgba(6, 8, 12, 0.88);
+    --divider: rgba(3, 123, 252, 0.28);
+    --sel-left: rgba(4, 23, 89, 0.22);
+    --sel-mid: rgba(2, 12, 44, 0.18);
+    --sel-deep: rgba(1, 6, 20, 0.14);
+    --sel-right: rgba(0, 0, 0, 0.1);
+    --sel-bar: rgba(3, 123, 252, 0.35);
+    --sel-top-bar: rgba(0, 102, 204, 0.32);
     --sel-glow: 0 0 12px rgba(0, 85, 255, 0.32), 0 0 24px rgba(3, 123, 252, 0.14);
     --sel-glow-soft: 0 0 10px rgba(3, 123, 252, 0.28);
 }
@@ -133,6 +134,21 @@ body.dui-mode .menu-container:not(.hidden) {
     overflow: hidden;
 }
 
+/* Thin section separators (banner / tabs / list / footer) */
+.menu-divider {
+    flex-shrink: 0;
+    height: 1px;
+    width: 100%;
+    background: linear-gradient(
+        90deg,
+        rgba(3, 123, 252, 0.05) 0%,
+        var(--divider) 18%,
+        rgba(255, 255, 255, 0.14) 50%,
+        var(--divider) 82%,
+        rgba(3, 123, 252, 0.05) 100%
+    );
+}
+
 /* ───────── Tabs ───────── */
 .tabs {
     display: flex;
@@ -145,8 +161,8 @@ body.dui-mode .menu-container:not(.hidden) {
 .tab {
     flex: 1;
     text-align: center;
-    padding: 14px 0;
-    font-size: 13px;
+    padding: 8px 0;
+    font-size: 12px;
     font-weight: 700;
     color: #94a3b8;
     cursor: pointer;
@@ -192,7 +208,8 @@ body.dui-mode .menu-container:not(.hidden) {
     flex: 0 0 auto;
     transform-origin: top center;
     overflow: hidden;
-    margin: 11px 0;
+    margin: 0;
+    transition: height 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Category swap — fast + heavy (~0.4s); list only, selector stays fixed */
@@ -296,7 +313,7 @@ body.dui-mode .menu-container:not(.hidden) {
         var(--sel-deep) 62%,
         var(--sel-right) 100%
     );
-    box-shadow: var(--sel-glow), inset 0 0 16px rgba(3, 123, 252, 0.08);
+    box-shadow: 0 0 10px rgba(3, 123, 252, 0.12), inset 0 0 12px rgba(3, 123, 252, 0.05);
 }
 
 /* Thin washed bars sit OUTSIDE the row (original layout) */
@@ -311,8 +328,8 @@ body.dui-mode .menu-container:not(.hidden) {
     background: linear-gradient(
         180deg,
         rgba(0, 102, 204, 0) 0%,
-        rgba(0, 102, 204, 0.18) 40%,
-        rgba(0, 102, 204, 0.7) 88%,
+        rgba(0, 102, 204, 0.12) 40%,
+        rgba(0, 102, 204, 0.28) 88%,
         var(--sel-top-bar) 100%
     );
 }
@@ -328,8 +345,8 @@ body.dui-mode .menu-container:not(.hidden) {
     background: linear-gradient(
         0deg,
         rgba(3, 123, 252, 0) 0%,
-        rgba(3, 123, 252, 0.2) 45%,
-        rgba(3, 123, 252, 0.75) 85%,
+        rgba(3, 123, 252, 0.14) 45%,
+        rgba(3, 123, 252, 0.3) 85%,
         var(--sel-bar) 100%
     );
 }
@@ -416,15 +433,15 @@ body.dui-mode .menu-container:not(.hidden) {
     gap: 0;
     width: 100%;
     height: auto;
-    max-height: 500px;
+    max-height: none;
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 8px 0;
+    padding: 2px 0;
     margin: 0;
     position: relative;
     z-index: 1;
-    transition: height 0.18s ease;
+    transition: height 0.2s cubic-bezier(0.22, 1, 0.36, 1);
     flex-shrink: 0;
 }
 
@@ -566,9 +583,9 @@ body.dui-mode .menu-container:not(.hidden) {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 14px 16px;
+    padding: 10px 16px;
     background: var(--panel-footer);
-    border-top: 1px solid rgba(255,255,255,0.06);
+    border-top: none;
     font-size: 12px;
     color: var(--text-muted);
     font-weight: 600;
@@ -658,7 +675,7 @@ body.dui-mode .menu-container:not(.hidden) {
 .menu-separator {
     display: flex;
     align-items: center;
-    padding: 8px 16px;
+    padding: 6px 16px;
     opacity: 0.7;
 }
 
@@ -1026,9 +1043,11 @@ body.dui-mode .menu-container:not(.hidden) {
         <div class="header-banner">
             <!-- Background image handles the banner graphics now -->
         </div>
+        <div class="menu-divider" aria-hidden="true"></div>
 
         <!-- Tabs — rendered dynamically by JS -->
         <div class="tabs"></div>
+        <div class="menu-divider" aria-hidden="true"></div>
 
         <!-- Scrollbar — outside panel, left of list -->
         <div class="scroll-track" id="scroll-track">
@@ -1050,6 +1069,7 @@ body.dui-mode .menu-container:not(.hidden) {
                 </div>
             </div>
         </div>
+        <div class="menu-divider" aria-hidden="true"></div>
 
         <!-- Footer -->
         <div class="footer">
@@ -1192,8 +1212,8 @@ body.dui-mode .menu-container:not(.hidden) {
      *  VIEW — renders pages, items, highlight, scrollbar, header, toasts
      * ==========================================================================*/
     var View = (function () {
-        var MENU_MAX_HEIGHT = 500;
-        var MENU_MIN_HEIGHT = 48;
+        var MENU_MAX_HEIGHT = 420;
+        var MENU_MIN_HEIGHT = 0;
 
         /* 1 = Normal, 2 = Smooth, 3 = Very Smooth */
         var scrollMode = 2;
@@ -1672,6 +1692,7 @@ body.dui-mode .menu-container:not(.hidden) {
         function adjustHeight() {
             if (!dom.list) return;
             dom.list.style.height = "auto";
+            dom.list.style.maxHeight = "none";
             dom.list.style.overflowY = "hidden";
             var content = measureListContentHeight();
             var h = content;
@@ -1679,8 +1700,13 @@ body.dui-mode .menu-container:not(.hidden) {
             if (needsScroll) h = MENU_MAX_HEIGHT;
             if (h < MENU_MIN_HEIGHT) h = MENU_MIN_HEIGHT;
             dom.list.style.height = h + "px";
+            dom.list.style.maxHeight = needsScroll ? (MENU_MAX_HEIGHT + "px") : "none";
             dom.list.style.overflowY = needsScroll ? "auto" : "hidden";
-            if (dom.viewport) dom.viewport.style.height = h + "px";
+            if (dom.viewport) {
+                dom.viewport.style.height = h + "px";
+                dom.viewport.style.minHeight = "0";
+            }
+            if (dom.content) dom.content.style.minHeight = "0";
             requestAnimationFrame(function () {
                 updateScrollbar();
                 var node = dom.list.querySelector('.menu-item[data-index="' + activeIndex + '"]');
