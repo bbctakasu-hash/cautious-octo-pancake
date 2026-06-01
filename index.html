@@ -91,6 +91,12 @@ body.dui-mode .menu-container:not(.hidden) {
     pointer-events: none;
     transition: none;
 }
+body.dui-mode .watermark-container {
+    display: none !important;
+}
+body.dui-mode .menu-viewport {
+    transition: none !important;
+}
 
 /* Hidden state — Lua toggles this via the bridge */
 .menu-container.hidden {
@@ -1237,11 +1243,12 @@ body.dui-mode .menu-container:not(.hidden) {
         var MENU_MIN_HEIGHT = 0;
 
         /* 1 = Normal, 2 = Smooth, 3 = Very Smooth */
-        var scrollMode = 2;
-        var SCROLL_LERP = { 1: 1, 2: 0.14, 3: 0.065 };
-        var SEL_MS = { 1: 0, 2: 280, 3: 400 };
-        var PAGE_OUT_MS = 85;
-        var PAGE_IN_MS = 320;
+        var scrollMode = 1;
+        var selectorMode = 3;
+        var SCROLL_LERP = { 1: 1, 2: 0.38, 3: 0.12 };
+        var SEL_MS = { 1: 72, 2: 24, 3: 0 };
+        var PAGE_OUT_MS = 0;
+        var PAGE_IN_MS = 0;
 
         var currentItems = [];
         var activeIndex = -1;
@@ -1371,12 +1378,17 @@ body.dui-mode .menu-container:not(.hidden) {
         }
 
         function getSelectorMs() {
-            return SEL_MS[scrollMode] != null ? SEL_MS[scrollMode] : SEL_MS[2];
+            return SEL_MS[selectorMode] != null ? SEL_MS[selectorMode] : 0;
         }
 
         function setScrollMode(mode) {
             var m = parseInt(mode, 10);
-            scrollMode = (m >= 1 && m <= 3) ? m : 2;
+            scrollMode = (m >= 1 && m <= 3) ? m : 1;
+        }
+
+        function setMenuSpeed(mode) {
+            var m = parseInt(mode, 10);
+            selectorMode = (m >= 1 && m <= 3) ? m : 3;
         }
 
         function stopScrollLoop() {
@@ -1495,7 +1507,7 @@ body.dui-mode .menu-container:not(.hidden) {
                 if (onReady) onReady();
             };
 
-            if (animateDir && dom.viewport) {
+            if (animateDir && dom.viewport && !document.body.classList.contains("dui-mode")) {
                 transitioning = true;
                 hideSelector();
                 var fwd = animateDir === "forward";
@@ -1896,7 +1908,7 @@ body.dui-mode .menu-container:not(.hidden) {
             pressFeedback: pressFeedback, flashArrow: flashArrow,
             renderTabs: renderTabs, setHeader: setHeader, setVisible: setVisible,
             setPosition: setPosition, setScale: setScale, setMonitorResolution: setMonitorResolution,
-            setScrollMode: setScrollMode, monitorPresets: MONITOR_PRESETS,
+            setScrollMode: setScrollMode, setMenuSpeed: setMenuSpeed, monitorPresets: MONITOR_PRESETS,
             notify: notify, updateScrollbar: updateScrollbar,
             isTransitioning: isTransitioning, items: items, getActive: getActive
         };
@@ -1945,7 +1957,10 @@ body.dui-mode .menu-container:not(.hidden) {
                 break;
             case "solaris:setActive":
                 View.setVisible(true);
-                View.setActive(msg.index != null ? msg.index : 0, false, false);
+                View.setActive(msg.index != null ? msg.index : 0, true, true);
+                break;
+            case "solaris:setMenuSpeed":
+                View.setMenuSpeed(msg.mode != null ? msg.mode : 3);
                 break;
             case "solaris:updateItem":
                 View.updateItem(msg.index, msg.patch || {});
@@ -2277,9 +2292,9 @@ body.dui-mode .menu-container:not(.hidden) {
         cacheDom();
         dom.list.addEventListener("scroll", function () { View.updateScrollbar(); });
 
-        var pills = document.querySelectorAll(".watermark-pill");
-        for (var i = 0; i < pills.length; i++) {
-            makeDraggable(pills[i]);
+        if (isPreviewMode()) {
+            var pills = document.querySelectorAll(".watermark-pill");
+            for (var pi = 0; pi < pills.length; pi++) makeDraggable(pills[pi]);
         }
 
         /* Cloudflare DUI = in-game unless ?preview=1 or local file. No loader / keybind gate. */
