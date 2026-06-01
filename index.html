@@ -65,8 +65,6 @@ body.dui-mode .menu-container.hidden {
     transition: none;
 }
 body.dui-mode .menu-container {
-    top: 0;
-    left: 0;
     width: 100%;
     max-width: 440px;
     font-size: 13px;
@@ -91,13 +89,14 @@ body.dui-mode .menu-container:not(.hidden) {
 /* ───────── Container ───────── */
 .menu-container {
     position: absolute;
-    top: 15vh;
-    left: 8vw;
+    top: 10vh;
+    left: 10vw;
     width: 440px;
     border-radius: 8px;
     background: #02040A;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    box-shadow: 0 0 10px rgba(15, 98, 254, 0.15);
+    border: none;
+    box-shadow: none;
+    outline: none;
     overflow: visible;
     color: var(--text-primary);
     display: flex;
@@ -171,6 +170,15 @@ body.dui-mode .menu-container:not(.hidden) {
     position: relative;
     flex: 0 0 auto;
     overflow: visible;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+}
+
+.content-main {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
 .menu-viewport {
@@ -284,10 +292,7 @@ body.dui-mode .menu-container:not(.hidden) {
         rgb(1, 6, 20) 62%,
         var(--sel-right) 100%
     );
-    box-shadow:
-        0 0 14px rgba(3, 123, 252, 0.28),
-        0 0 28px rgba(4, 23, 89, 0.4),
-        inset 0 0 18px rgba(3, 123, 252, 0.06);
+    box-shadow: inset 0 0 18px rgba(3, 123, 252, 0.06);
 }
 
 /* Thin washed bars sit OUTSIDE the row (original layout) */
@@ -325,33 +330,130 @@ body.dui-mode .menu-container:not(.hidden) {
     );
 }
 
-/* ─── Custom Scrollbar (neon) — floats OUTSIDE the panel, to its left ─── */
+/* ─── Left scrollbar (selector-style bars + gradient rail) ─── */
 .scroll-track {
-    display: none !important;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    flex: 0 0 14px;
+    width: 14px;
+    position: relative;
+    margin: 11px 4px 11px 10px;
+    align-self: stretch;
+    min-height: 48px;
+    box-sizing: border-box;
+    background: linear-gradient(
+        180deg,
+        var(--sel-left) 0%,
+        rgb(2, 12, 44) 45%,
+        rgb(1, 6, 20) 70%,
+        var(--sel-right) 100%
+    );
+    box-shadow: inset 0 0 12px rgba(3, 123, 252, 0.05);
+}
+
+.scroll-track::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -11px;
+    height: 11px;
+    pointer-events: none;
+    background: linear-gradient(
+        180deg,
+        rgba(0, 102, 204, 0) 0%,
+        rgba(0, 102, 204, 0.18) 40%,
+        rgba(0, 102, 204, 0.7) 88%,
+        var(--sel-top-bar) 100%
+    );
+}
+
+.scroll-track::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -11px;
+    height: 11px;
+    pointer-events: none;
+    background: linear-gradient(
+        0deg,
+        rgba(3, 123, 252, 0) 0%,
+        rgba(3, 123, 252, 0.2) 45%,
+        rgba(3, 123, 252, 0.75) 85%,
+        var(--sel-bar) 100%
+    );
+}
+
+.scroll-track-inner {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 40px;
+    margin: 14px 0;
 }
 
 .scroll-arrow-top,
 .scroll-arrow-bottom {
     position: absolute;
     left: 0;
-    width: 8px;
+    right: 0;
+    width: auto;
     text-align: center;
-    font-size: 9px;
-    color: rgba(var(--theme), 0.8);
+    font-size: 8px;
+    line-height: 1;
+    color: rgba(3, 123, 252, 0.85);
     pointer-events: none;
-    transition: top 0.05s linear;
-    text-shadow: 0 0 6px rgba(var(--theme), 0.5);
+    z-index: 2;
 }
+
+.scroll-arrow-top { top: 2px; }
+.scroll-arrow-bottom { bottom: 2px; }
 
 .scroll-thumb {
     position: absolute;
     left: 2px;
-    width: 4px;
-    height: 30px;
-    background: rgb(var(--theme));
-    border-radius: 10px;
-    box-shadow: 0 0 16px rgba(var(--theme), 0.9), 0 0 8px rgba(var(--theme), 0.6);
-    transition: top 0.05s linear, height 0.1s ease;
+    right: 2px;
+    width: auto;
+    min-height: 24px;
+    background: linear-gradient(
+        180deg,
+        var(--sel-left) 0%,
+        rgb(2, 12, 44) 50%,
+        var(--sel-right) 100%
+    );
+    border-radius: 0;
+    box-shadow: none;
+    transition: top 0.08s linear, height 0.1s ease;
+    z-index: 1;
+}
+
+.scroll-thumb::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 4px;
+    background: linear-gradient(180deg, var(--sel-top-bar) 0%, rgba(0, 102, 204, 0) 100%);
+    pointer-events: none;
+}
+
+.scroll-thumb::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 4px;
+    background: linear-gradient(0deg, var(--sel-bar) 0%, rgba(3, 123, 252, 0) 100%);
+    pointer-events: none;
+}
+
+.scroll-track.is-idle .scroll-thumb {
+    top: 0 !important;
+    height: 100% !important;
+    opacity: 0.35;
 }
 
 .menu-list {
@@ -979,14 +1081,18 @@ body.dui-mode .menu-container:not(.hidden) {
             <!-- Floating Scrollbar -->
             <div class="scroll-track" id="scroll-track">
                 <span class="scroll-arrow-top">▲</span>
-                <div class="scroll-thumb" id="scroll-thumb"></div>
+                <div class="scroll-track-inner" id="scroll-track-inner">
+                    <div class="scroll-thumb" id="scroll-thumb"></div>
+                </div>
                 <span class="scroll-arrow-bottom">▼</span>
             </div>
 
-            <div class="menu-selector" id="menu-selector" aria-hidden="true"></div>
-            <div class="menu-viewport" id="menu-viewport">
-                <div class="menu-list" id="menu-list">
-                    <!-- Javascript will inject list items here -->
+            <div class="content-main">
+                <div class="menu-selector" id="menu-selector" aria-hidden="true"></div>
+                <div class="menu-viewport" id="menu-viewport">
+                    <div class="menu-list" id="menu-list">
+                        <!-- Javascript will inject list items here -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -1110,6 +1216,7 @@ body.dui-mode .menu-container:not(.hidden) {
         dom.pageCount = document.getElementById("page-count");
         dom.tabs = document.querySelector(".tabs");
         dom.track = document.getElementById("scroll-track");
+        dom.trackInner = document.getElementById("scroll-track-inner");
         dom.thumb = document.getElementById("scroll-thumb");
         dom.arrowTop = document.querySelector(".scroll-arrow-top");
         dom.arrowBottom = document.querySelector(".scroll-arrow-bottom");
@@ -1623,32 +1730,30 @@ body.dui-mode .menu-container:not(.hidden) {
         }
 
         function updateScrollbar() {
-            if (!dom.track || !dom.thumb) return;
+            if (!dom.track || !dom.thumb || !dom.list || !dom.trackInner) return;
             requestAnimationFrame(function () {
                 var sh = dom.list.scrollHeight;
                 var ch = dom.list.clientHeight;
                 var st = dom.list.scrollTop;
-                dom.track.style.top = dom.list.offsetTop + "px";
-                dom.track.style.height = ch + "px";
+                var trackH = Math.max(ch, 48);
+                dom.track.style.height = trackH + "px";
+                dom.trackInner.style.height = Math.max(24, trackH - 28) + "px";
 
                 if (sh <= ch || ch === 0) {
-                    dom.thumb.style.height = ch + "px";
+                    dom.track.classList.add("is-idle");
+                    dom.thumb.style.height = "100%";
                     dom.thumb.style.top = "0px";
-                    if (dom.arrowTop) dom.arrowTop.style.display = "none";
-                    if (dom.arrowBottom) dom.arrowBottom.style.display = "none";
                     return;
                 }
-                if (dom.arrowTop) dom.arrowTop.style.display = "";
-                if (dom.arrowBottom) dom.arrowBottom.style.display = "";
+                dom.track.classList.remove("is-idle");
 
-                var th = Math.max(25, (ch / sh) * ch);
+                var innerH = dom.trackInner.clientHeight;
+                var th = Math.max(24, (ch / sh) * innerH);
                 dom.thumb.style.height = th + "px";
-                var maxTravel = ch - th;
+                var maxTravel = Math.max(0, innerH - th);
                 var maxScroll = sh - ch;
                 var y = maxScroll > 0 ? (st / maxScroll) * maxTravel : 0;
                 dom.thumb.style.top = y + "px";
-                if (dom.arrowTop) dom.arrowTop.style.top = (y - 16) + "px";
-                if (dom.arrowBottom) dom.arrowBottom.style.top = (y + th + 4) + "px";
             });
         }
 
@@ -2175,6 +2280,7 @@ body.dui-mode .menu-container:not(.hidden) {
                 function () { /* keyboard tabs in Lua */ }
             );
             View.render(defaultMain, 0, null);
+            View.setPosition(10, 10);
             View.setVisible(false);
             if (dom.pageCount) dom.pageCount.textContent = "↑↓ · Enter · ←";
             return;
