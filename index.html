@@ -1714,14 +1714,11 @@ body.dui-mode .menu-container:not(.hidden) {
         cacheDom();
         dom.list.addEventListener("scroll", function () { View.updateScrollbar(); });
 
-        /* Browser / file:// = show the real UI for editing & preview.
-           In-game FiveM DUI = transparent page, menu hidden until Lua sends messages. */
+        /* Normal browser / file = preview UI. FiveM CitizenFX = in-game DUI (transparent). */
         var forcePreview = /[?&]preview=1\b/.test(window.location.search)
             || /[?&]standalone=1\b/.test(window.location.search);
-        var forceDui = /[?&]dui=1\b/.test(window.location.search);
-        var isPreviewMode = forcePreview
-            || (window.location.protocol === "file:" && !forceDui)
-            || (!isInGameDuiHost() && !forceDui);
+        var inGame = isInGameDuiHost();
+        var isPreviewMode = forcePreview || !inGame;
 
         if (!isPreviewMode) {
             document.documentElement.classList.add("dui-mode");
