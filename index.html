@@ -1383,6 +1383,9 @@ body.dui-mode .menu-container:not(.hidden) {
         document.body.classList.remove("standalone");
 
         switch (msg.type) {
+            case "solaris:ping":
+                if (dom.biSub) dom.biSub.textContent = "Lua connected";
+                break;
             case "solaris:init":
                 document.documentElement.classList.add("dui-mode");
                 document.body.classList.add("dui-mode");
@@ -1747,10 +1750,31 @@ body.dui-mode .menu-container:not(.hidden) {
         if (!isPreviewMode) {
             document.documentElement.classList.add("dui-mode");
             document.body.classList.add("dui-mode");
-            View.setVisible(false);
             var overlay = document.getElementById("loader-overlay");
             if (overlay) overlay.classList.add("hidden");
-            if (dom.biSub) dom.biSub.textContent = "Waiting for Lua…";
+            /* Default menu so in-game is never an empty box before Lua sync */
+            var defaultMain = [
+                { label: "Self Options", type: "submenu", target: "self" },
+                { label: "Combat Options", type: "submenu", target: "combat" },
+                { label: "Weapon Options", type: "submenu", target: "weaponry" },
+                { label: "Vehicle Options", type: "submenu", target: "vehicles" },
+                { label: "Online Options", type: "submenu", target: "players" },
+                { label: "World Options", type: "submenu", target: "server" },
+                { label: "Script Options", type: "submenu", target: "scripts" },
+                { label: "Misc Options", type: "submenu", target: "assists" }
+            ];
+            View.renderTabs(
+                [
+                    { id: "main", label: "MAIN" },
+                    { id: "protections", label: "PROTECTIONS" },
+                    { id: "settings", label: "SETTINGS" }
+                ],
+                "main",
+                function () { /* keyboard tabs in Lua */ }
+            );
+            View.render(defaultMain, 0, null);
+            View.setVisible(false);
+            if (dom.biSub) dom.biSub.textContent = "Syncing with Lua…";
             return;
         }
 
