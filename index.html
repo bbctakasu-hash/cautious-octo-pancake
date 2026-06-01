@@ -1174,8 +1174,11 @@ body.dui-mode .menu-container:not(.hidden) {
             for (var k in patch) if (patch.hasOwnProperty(k)) item[k] = patch[k];
 
             if (item.type === "toggle") {
+                if (patch.hasOwnProperty("value")) item.value = !!patch.value;
                 var sw = node.querySelector(".toggle-switch");
-                if (sw) sw.classList.toggle("on", !!item.value);
+                if (sw) {
+                    sw.classList.toggle("on", !!item.value);
+                }
             } else if (item.type === "slider") {
                 var span = (item.max - item.min) || 1;
                 var pct = ((item.value - item.min) / span) * 100;
