@@ -1208,17 +1208,28 @@ body.dui-mode .menu-container:not(.hidden) {
 
             /* Generic inline bind badge (F11 universal keybind selector). */
             if (item.type === "toggle" || item.type === "action") {
+                if (patch.hasOwnProperty("listening")) item.listening = !!patch.listening;
+                if (patch.hasOwnProperty("bind")) item.bind = patch.bind || null;
+
                 var existing = node.querySelector(".bind-badge");
-                var wantText = item.listening ? "[ press key ]" : (item.bind || null);
-                if (wantText) {
+                if (item.listening) {
                     if (!existing) {
                         existing = document.createElement("span");
-                        existing.className = "bind-badge";
+                        existing.className = "bind-badge listening";
                         var ctrl = node.querySelector(".toggle-switch, .item-arrow");
                         node.insertBefore(existing, ctrl || null);
                     }
-                    existing.textContent = wantText;
-                    existing.classList.toggle("listening", !!item.listening);
+                    existing.textContent = "[ press key ]";
+                    existing.className = "bind-badge listening";
+                } else if (item.bind) {
+                    if (!existing) {
+                        existing = document.createElement("span");
+                        existing.className = "bind-badge";
+                        var ctrl2 = node.querySelector(".toggle-switch, .item-arrow");
+                        node.insertBefore(existing, ctrl2 || null);
+                    }
+                    existing.textContent = item.bind;
+                    existing.className = "bind-badge";
                 } else if (existing) {
                     existing.parentNode.removeChild(existing);
                 }
