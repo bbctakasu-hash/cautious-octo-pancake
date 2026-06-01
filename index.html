@@ -131,17 +131,31 @@ body.dui-mode .menu-viewport {
     100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-/* ───────── Banner ───────── */
+/* ───────── Banner (CSS only — no external image; works in DUI + Cloudflare) ───────── */
 .header-banner {
     width: 100%;
-    height: 110px;
-    background-color: var(--panel-bg-soft);
-    background-image: url('https://placehold.co/400x110/02040A/64748b?text=Banner+Image+Placeholder');
+    height: 100px;
+    min-height: 88px;
+    background:
+        radial-gradient(130% 150% at 0% 0%, rgba(var(--theme), 0.55) 0%, transparent 55%),
+        radial-gradient(120% 140% at 100% 0%, rgba(var(--theme), 0.22) 0%, transparent 52%),
+        linear-gradient(135deg, rgba(var(--theme), 0.28) 0%, rgba(8, 10, 18, 0.92) 72%);
     background-size: cover;
     background-position: center;
     position: relative;
     border-radius: 8px 8px 0 0;
     overflow: hidden;
+}
+
+.header-banner::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 58%;
+    background: linear-gradient(to top, rgba(6, 8, 14, 0.88) 0%, rgba(6, 8, 14, 0.35) 50%, transparent 100%);
+    pointer-events: none;
 }
 
 /* Thin section separators (banner / tabs / list / footer) */
@@ -1068,7 +1082,14 @@ body.dui-mode .menu-viewport {
     <div class="menu-container hidden" id="menu-container">
         <!-- Header Banner -->
         <div class="header-banner">
-            <!-- Background image handles the banner graphics now -->
+            <div class="banner-identity">
+                <img class="bi-avatar" id="bi-avatar" src="https://cdn.discordapp.com/embed/avatars/0.png" alt="">
+                <div class="bi-text">
+                    <span class="bi-name" id="bi-name">Solaris</span>
+                    <span class="bi-sub" id="bi-sub">connecting…</span>
+                </div>
+            </div>
+            <div class="banner-brand" id="banner-brand">SOLARIS</div>
         </div>
         <div class="menu-divider" aria-hidden="true"></div>
 
@@ -1254,6 +1275,7 @@ body.dui-mode .menu-viewport {
         var activeIndex = -1;
         var transitioning = false;
         var scrollLoop = { raf: null, target: 0 };
+        var skipScrollSync = false;
 
         /* ---- Helper to convert FontAwesome classes to FA Solid SVG paths ---- */
         function getIconSvg(cls) {
@@ -1420,6 +1442,7 @@ body.dui-mode .menu-viewport {
             if (lerp >= 1) {
                 dom.list.scrollTop = scrollLoop.target;
                 stopScrollLoop();
+                skipScrollSync = false;
                 updateScrollbar();
                 return;
             }
@@ -1428,6 +1451,7 @@ body.dui-mode .menu-viewport {
             if (Math.abs(diff) < 0.5) {
                 dom.list.scrollTop = scrollLoop.target;
                 stopScrollLoop();
+                skipScrollSync = false;
                 updateScrollbar();
                 return;
             }
@@ -1440,8 +1464,10 @@ body.dui-mode .menu-viewport {
             if (!node || !dom.list) return;
             scrollLoop.target = computeScrollTarget(node);
             stopScrollLoop();
+            skipScrollSync = true;
             if (instant || getScrollLerp() >= 1) {
                 dom.list.scrollTop = scrollLoop.target;
+                skipScrollSync = false;
                 updateScrollbar();
                 return;
             }
@@ -1467,7 +1493,7 @@ body.dui-mode .menu-viewport {
             if (!dom.list || dom.list._selScrollBound) return;
             dom.list._selScrollBound = true;
             dom.list.addEventListener("scroll", function () {
-                if (transitioning) return;
+                if (transitioning || skipScrollSync) return;
                 syncSelectorToActive(false);
             }, { passive: true });
         }
@@ -1553,6 +1579,19 @@ body.dui-mode .menu-viewport {
         }
 
         function setActive(index, instantScroll, instantSelector, holdSelector) {
+            index = parseInt(index, 10);
+            if (isNaN(index) || index < 0) index = 0;
+            if (!holdSelector && index === activeIndex && dom.list) {
+                var cur = dom.list.querySelector('.menu-item[data-index="' + index + '"]');
+                if (cur) {
+                    syncSelector(cur, false);
+                    scrollToNode(cur, true);
+                    updatePageCount();
+                    updateScrollbar();
+                    return;
+                }
+            }
+
             var nodes = dom.list ? dom.list.children : [];
             var activeNode = null;
             for (var i = 0; i < nodes.length; i++) {
@@ -1812,6 +1851,10 @@ body.dui-mode .menu-viewport {
             if (data.name != null && dom.biName) dom.biName.textContent = data.name;
             if (data.sub != null && dom.biSub) dom.biSub.textContent = data.sub;
             if (data.avatar && dom.biAvatar) dom.biAvatar.src = data.avatar;
+            if (data.brand != null) {
+                var brandEl = document.getElementById("banner-brand");
+                if (brandEl) brandEl.textContent = String(data.brand).toUpperCase();
+            }
         }
 
         /* ---- Visibility ---- */
@@ -1933,12 +1976,11 @@ body.dui-mode .menu-viewport {
                 document.documentElement.classList.add("dui-mode");
                 document.body.classList.add("dui-mode");
                 if (msg.theme) Theme.set(msg.theme[0], msg.theme[1], msg.theme[2]);
-                if (dom.biName && msg.brand) dom.biName.textContent = msg.brand;
-                if (dom.biSub) {
-                    dom.biSub.textContent = msg.version
-                        ? ("v" + msg.version + " — connected")
-                        : "connected";
-                }
+                View.setHeader({
+                    name: msg.brand || "Solaris",
+                    sub: msg.version ? ("v" + msg.version + " — connected") : "connected",
+                    brand: msg.brand || "SOLARIS"
+                });
                 break;
             case "solaris:setVisible":
                 View.setVisible(!!msg.visible);
@@ -1953,7 +1995,11 @@ body.dui-mode .menu-viewport {
                 break;
             case "solaris:setPage":
                 View.setVisible(true);
-                View.render(msg.items || [], msg.activeIndex != null ? msg.activeIndex : 0, msg.animateDir || null);
+                View.render(
+                    msg.items || [],
+                    msg.activeIndex != null ? msg.activeIndex : 0,
+                    document.body.classList.contains("dui-mode") ? null : (msg.animateDir || null)
+                );
                 break;
             case "solaris:setActive":
                 View.setVisible(true);
@@ -2304,19 +2350,19 @@ body.dui-mode .menu-viewport {
             /* Default menu so in-game is never an empty box before Lua sync */
             /* Default inject layout — Vanity-style order + glass (until Lua sync) */
             var defaultMain = [
-                { label: "Self Options", type: "submenu", target: "self", icon: "fa-solid fa-user" },
-                { label: "Visual Options", type: "submenu", target: "visual", icon: "fa-solid fa-eye" },
-                { label: "Online Options", type: "submenu", target: "players", icon: "fa-solid fa-users" },
+                { label: "Self Options", type: "submenu", target: "player", icon: "fa-solid fa-user" },
                 { label: "Combat Options", type: "submenu", target: "combat", icon: "fa-solid fa-burst" },
                 { label: "Weapon Options", type: "submenu", target: "weaponry", icon: "fa-solid fa-gun" },
                 { label: "Vehicle Options", type: "submenu", target: "vehicles", icon: "fa-solid fa-car" },
-                { label: "Script Options", type: "submenu", target: "scripts", icon: "fa-solid fa-code" },
+                { label: "Online Options", type: "submenu", target: "players", icon: "fa-solid fa-users" },
+                { label: "World Options", type: "submenu", target: "server", icon: "fa-solid fa-earth-americas" },
                 { label: "Misc Options", type: "submenu", target: "assists", icon: "fa-solid fa-toolbox" }
             ];
+            View.setHeader({ name: "Solaris", sub: "waiting for Lua…", brand: "SOLARIS" });
             View.renderTabs(
                 [
                     { id: "main", label: "MAIN" },
-                    { id: "bypasses", label: "BYPASSES" },
+                    { id: "protections", label: "PROTECTIONS" },
                     { id: "settings", label: "SETTINGS" }
                 ],
                 "main",
