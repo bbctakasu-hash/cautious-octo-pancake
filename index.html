@@ -8,24 +8,31 @@
 /* System fonts in-game (no Google Fonts CDN = faster load, sharper DUI text). */
 
 :root {
-    --theme: 130, 100, 220;
-    --bg: 8, 6, 10;
-    --surface: 14, 10, 16;
-    --text-primary: #fff;
-    --text-secondary: #c0b8b8;
-    --text-muted: #6a5858;
+    --theme: 15, 98, 254;
+    --bg: 0, 0, 0;
+    --surface: 5, 5, 5;
+    --text-primary: #ffffff;
+    --text-secondary: #E2E8F0;
+    --text-muted: #64748b;
     --radius: 14px;
     --item-radius: 10px;
     --glow-soft: 0 0 40px -8px rgba(var(--theme), 0.3);
     --glow-strong: 0 0 60px -5px rgba(var(--theme), 0.45);
+    /* Selector + washed bars (from dui/index.html) */
+    --sel-left: rgb(4, 23, 89);
+    --sel-right: rgb(0, 0, 0);
+    --sel-bar: rgb(3, 123, 252);
+    --sel-top-bar: rgb(0, 102, 204);
 }
+
+@import url('https://fonts.cdnfonts.com/css/google-sans');
 
 body, html {
     margin: 0;
     padding: 0;
     width: 100%;
     height: 100vh;
-    font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Google Sans', 'Product Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
     background: transparent;
     overflow: hidden;
     user-select: none;
@@ -58,12 +65,13 @@ body.dui-mode .menu-container.hidden {
     transform: none;
     opacity: 0;
     pointer-events: none;
+    transition: none;
 }
 body.dui-mode .menu-container {
     top: 0;
     left: 0;
     width: 100%;
-    max-width: 400px;
+    max-width: 440px;
     font-size: 13px;
     animation: none;
     opacity: 1 !important;
@@ -73,6 +81,7 @@ body.dui-mode .menu-container {
 body.dui-mode .menu-container:not(.hidden) {
     transform: scale(1) translateY(0) !important;
     pointer-events: none;
+    transition: none;
 }
 
 /* Hidden state — Lua toggles this via the bridge */
@@ -87,22 +96,11 @@ body.dui-mode .menu-container:not(.hidden) {
     position: absolute;
     top: 15vh;
     left: 8vw;
-    width: 400px;
-    border-radius: var(--radius);
-    /* Solid translucent panel. NO backdrop-filter: in a transparent DUI texture
-       blur() has nothing to sample and renders as an opaque BLACK rectangle. */
-    background: linear-gradient(
-        160deg,
-        rgba(24, 18, 32, 0.90) 0%,
-        rgba(12, 9, 16, 0.92) 100%
-    );
-    /* Clean neutral edge — no theme-coloured neon outline/glow. */
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    box-shadow:
-        inset 0 1px 0 rgba(255,255,255,0.05),
-        0 20px 55px -18px rgba(0,0,0,0.75);
-    /* visible so the neon scrollbar can float OUTSIDE on the left.
-       Banner (top) and footer (bottom) round their own corners. */
+    width: 440px;
+    border-radius: 8px;
+    background: #02040A;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 0 10px rgba(15, 98, 254, 0.15);
     overflow: visible;
     color: var(--text-primary);
     display: flex;
@@ -121,86 +119,218 @@ body.dui-mode .menu-container:not(.hidden) {
 /* ───────── Banner ───────── */
 .header-banner {
     width: 100%;
-    height: 72px;
-    min-height: 72px;
-    background: linear-gradient(135deg, rgba(var(--theme), 0.18) 0%, rgba(var(--bg), 0.45) 100%);
+    height: 110px;
+    background-color: #02040A;
+    background-image: url('https://placehold.co/400x110/02040A/64748b?text=Banner+Image+Placeholder');
+    background-size: cover;
+    background-position: center;
     position: relative;
-    border-radius: var(--radius) var(--radius) 0 0;
+    border-radius: 8px 8px 0 0;
     overflow: hidden;
-}
-
-.header-banner::after {
-    content: '';
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    height: 55%;
-    background: linear-gradient(to top, rgba(var(--bg), 0.55) 0%, rgba(var(--bg), 0.25) 45%, transparent 100%);
-    pointer-events: none;
 }
 
 /* ───────── Tabs ───────── */
 .tabs {
     display: flex;
     padding: 0;
-    background: rgba(var(--surface), 0.7);
-    border-bottom: 1px solid rgba(var(--theme), 0.08);
+    background: #02040A;
     position: relative;
+    z-index: 6;
 }
 
 .tab {
     flex: 1;
     text-align: center;
-    padding: 13px 0;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-muted);
+    padding: 14px 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: #94a3b8;
     cursor: pointer;
-    text-transform: uppercase;
-    letter-spacing: 2px;
+    text-transform: capitalize;
+    background: #000000;
+    transition: color 0.15s ease, background 0.15s ease;
     position: relative;
-    transition: color 0.35s ease, background 0.35s ease;
-}
-
-.tab::after {
-    content: '';
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    height: 2px;
-    background: rgb(var(--theme));
-    border-radius: 2px 2px 0 0;
-    transform: scaleX(0);
-    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 0 0 14px rgba(var(--theme), 0.7), 0 0 30px rgba(var(--theme), 0.3);
+    z-index: 1;
 }
 
 .tab:hover {
-    color: #bbb;
-    background: rgba(var(--theme), 0.03);
+    color: #ffffff;
+    background: #0a1020;
 }
 
 .tab.active {
-    color: rgb(var(--theme));
-    background: rgba(var(--theme), 0.08);
-    text-shadow: 0 0 16px rgba(var(--theme), 0.6);
-}
-
-.tab.active::after {
-    transform: scaleX(1);
+    color: #ffffff;
+    background: linear-gradient(
+        to top,
+        var(--sel-left) 0%,
+        var(--sel-top-bar) 100%
+    );
+    box-shadow: none;
 }
 
 /* ───────── Content ───────── */
 .content {
-    padding: 10px 10px 4px 10px;
+    padding: 0;
     position: relative;
+    flex: 0 0 auto;
+    overflow: visible;
+}
+
+.menu-viewport {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    flex: 0 0 auto;
+    transform-origin: top center;
+    overflow: hidden;
+    margin: 11px 0;
+}
+
+/* Category swap — fast + heavy (~0.4s); list only, selector stays fixed */
+.menu-viewport.page-out-forward {
+    animation: menuPageOutForward 0.085s cubic-bezier(0.85, 0, 1, 0.15) forwards;
+}
+
+.menu-viewport.page-out-backward {
+    animation: menuPageOutBackward 0.085s cubic-bezier(0.85, 0, 1, 0.15) forwards;
+}
+
+.menu-viewport.page-in-forward {
+    animation: menuPageInForward 0.32s cubic-bezier(0.14, 1.25, 0.34, 1) forwards;
+}
+
+.menu-viewport.page-in-backward {
+    animation: menuPageInBackward 0.32s cubic-bezier(0.14, 1.25, 0.34, 1) forwards;
+}
+
+.menu-viewport.page-in-forward .menu-item,
+.menu-viewport.page-in-backward .menu-item {
+    animation: menuItemIn 0.28s cubic-bezier(0.2, 1, 0.4, 1) backwards;
+}
+
+.menu-viewport.page-in-forward .menu-item:nth-child(1),
+.menu-viewport.page-in-backward .menu-item:nth-child(1) { animation-delay: 0.02s; }
+.menu-viewport.page-in-forward .menu-item:nth-child(2),
+.menu-viewport.page-in-backward .menu-item:nth-child(2) { animation-delay: 0.03s; }
+.menu-viewport.page-in-forward .menu-item:nth-child(3),
+.menu-viewport.page-in-backward .menu-item:nth-child(3) { animation-delay: 0.04s; }
+.menu-viewport.page-in-forward .menu-item:nth-child(4),
+.menu-viewport.page-in-backward .menu-item:nth-child(4) { animation-delay: 0.05s; }
+.menu-viewport.page-in-forward .menu-item:nth-child(5),
+.menu-viewport.page-in-backward .menu-item:nth-child(5) { animation-delay: 0.06s; }
+.menu-viewport.page-in-forward .menu-item:nth-child(n+6),
+.menu-viewport.page-in-backward .menu-item:nth-child(n+6) { animation-delay: 0.07s; }
+
+@keyframes menuPageOutForward {
+    to {
+        transform: translateX(-22px) scale(0.97);
+        opacity: 0;
+        filter: blur(5px);
+    }
+}
+
+@keyframes menuPageOutBackward {
+    to {
+        transform: translateX(22px) scale(0.97);
+        opacity: 0;
+        filter: blur(5px);
+    }
+}
+
+@keyframes menuPageInForward {
+    from {
+        transform: translateX(28px) scale(0.965);
+        opacity: 0;
+        filter: blur(6px);
+    }
+    to {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+        filter: blur(0);
+    }
+}
+
+@keyframes menuPageInBackward {
+    from {
+        transform: translateX(-28px) scale(0.965);
+        opacity: 0;
+        filter: blur(6px);
+    }
+    to {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+        filter: blur(0);
+    }
+}
+
+@keyframes menuItemIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Floating selector — outside animated viewport so it never rides the transition */
+.menu-selector {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 48px;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0;
+    box-sizing: border-box;
+    border-radius: 0;
+    background: linear-gradient(
+        90deg,
+        var(--sel-left) 0%,
+        rgb(2, 12, 44) 38%,
+        rgb(1, 6, 20) 62%,
+        var(--sel-right) 100%
+    );
+    box-shadow:
+        0 0 14px rgba(3, 123, 252, 0.28),
+        0 0 28px rgba(4, 23, 89, 0.4),
+        inset 0 0 18px rgba(3, 123, 252, 0.06);
+}
+
+/* Thin washed bars sit OUTSIDE the row (original layout) */
+.menu-selector::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -11px;
+    height: 11px;
+    pointer-events: none;
+    background: linear-gradient(
+        180deg,
+        rgba(0, 102, 204, 0) 0%,
+        rgba(0, 102, 204, 0.18) 40%,
+        rgba(0, 102, 204, 0.7) 88%,
+        var(--sel-top-bar) 100%
+    );
+}
+
+.menu-selector::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -11px;
+    height: 11px;
+    pointer-events: none;
+    background: linear-gradient(
+        0deg,
+        rgba(3, 123, 252, 0) 0%,
+        rgba(3, 123, 252, 0.2) 45%,
+        rgba(3, 123, 252, 0.75) 85%,
+        var(--sel-bar) 100%
+    );
 }
 
 /* ─── Custom Scrollbar (neon) — floats OUTSIDE the panel, to its left ─── */
 .scroll-track {
-    position: absolute;
-    left: -16px;
-    width: 8px;
-    z-index: 10;
-    /* top and height set by JS */
+    display: none !important;
 }
 
 .scroll-arrow-top,
@@ -230,13 +360,19 @@ body.dui-mode .menu-container:not(.hidden) {
 .menu-list {
     display: flex;
     flex-direction: column;
-    gap: 3px;
-    height: 310px;
+    gap: 0;
+    width: 100%;
+    height: auto;
+    max-height: 500px;
+    min-height: 0;
     overflow-y: auto;
-    padding-right: 4px;
-    transition: height 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-                transform 0.15s cubic-bezier(0.16, 1, 0.3, 1),
-                opacity 0.15s ease;
+    overflow-x: hidden;
+    padding: 8px 0;
+    margin: 0;
+    position: relative;
+    z-index: 1;
+    transition: height 0.18s ease;
+    flex-shrink: 0;
 }
 
 /* Scrollbar */
@@ -248,121 +384,127 @@ body.dui-mode .menu-container:not(.hidden) {
     display: flex;
     align-items: center;
     box-sizing: border-box;
-    height: 42px;
+    width: 100%;
+    height: 48px;
     flex-shrink: 0;
-    padding: 0 16px;
-    border-radius: var(--item-radius);
+    padding: 0 20px;
+    margin: 0;
     cursor: pointer;
     border: none;
     background: transparent;
     position: relative;
-    overflow: hidden;
-    transition:
-        background 0.3s ease,
-        box-shadow 0.3s ease,
-        transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* Shimmer sweep on active */
-.menu-item::after {
-    content: '';
-    position: absolute;
-    top: 0; left: -100%; right: 0; bottom: 0;
-    width: 100%; height: 100%;
-    background: linear-gradient(90deg, transparent 0%, rgba(var(--theme), 0.06) 50%, transparent 100%);
-    transition: left 0.5s ease;
-    pointer-events: none;
+    z-index: 1;
+    isolation: isolate;
+    overflow: visible;
+    background: transparent !important;
+    box-shadow: none !important;
+    transition: color 0.16s ease;
 }
 
 /* ─── Item Icon ─── */
 .item-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     width: 28px;
     margin-right: 14px;
-    font-size: 18px;
-    text-align: center;
     color: var(--text-muted);
-    transition: color 0.3s ease, text-shadow 0.3s ease;
+    transition: color 0.18s ease;
     z-index: 2;
     flex-shrink: 0;
+}
+
+.item-icon svg.menu-svg-icon {
+    width: 20px;
+    height: 20px;
+    transition: transform 0.14s ease, color 0.18s ease;
 }
 
 .menu-item .item-name {
     flex: 1;
     font-size: 15.2px;
-    font-weight: 400;
+    font-weight: 600;
     color: var(--text-secondary);
-    transition: all 0.3s ease;
+    transition: color 0.18s ease;
     z-index: 2;
     letter-spacing: 0.2px;
 }
 
 .menu-item .item-arrow {
-    font-size: 13px;
-    color: var(--text-muted);
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    min-width: 20px;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1;
+    color: #94a3b8;
+    opacity: 0.65;
     z-index: 2;
-    opacity: 0.5;
-    transform: translateX(0);
+    transition: color 0.18s ease, opacity 0.18s ease;
 }
 
-/* ─── Hover ─── */
-.menu-item:hover {
+.menu-item .item-arrow.item-arrow--dim {
+    opacity: 0.32;
+}
+
+/* ─── Hover (subtle — no row scale) ─── */
+.menu-item:not(.active):hover {
     background: rgba(var(--theme), 0.04);
 }
-.menu-item:hover .item-name { color: #ccc; }
-.menu-item:hover .item-arrow { opacity: 0.8; }
-.menu-item:hover .item-icon { color: #999; }
-
-/* ─── Active / Selected ─── */
-.menu-item.active {
-    background: linear-gradient(100deg, rgba(var(--theme), 0.26) 0%, rgba(var(--theme), 0.07) 100%);
-    /* Thin, slightly brighter outline (outline = no layout shift). */
-    outline: 1px solid rgba(var(--theme), 0.6);
-    outline-offset: -1px;
-    box-shadow:
-        0 4px 22px rgba(0,0,0,0.5),
-        0 0 26px -2px rgba(var(--theme), 0.55),
-        inset 0 0 34px rgba(var(--theme), 0.16);
+.menu-item:not(.active):hover .item-name { color: #ccc; }
+.menu-item:not(.active):hover .item-arrow { opacity: 0.85; }
+.menu-item:not(.active):hover .item-icon { color: #999; }
+.menu-item:not(.active):hover .item-icon svg.menu-svg-icon {
+    transform: scale(1.02);
 }
 
+/* Active row — text highlight only (bar is .menu-selector) */
+.menu-item.active::before,
 .menu-item.active::after {
-    left: 100%;
+    display: none !important;
+    content: none !important;
 }
 
-/* Glowing left accent bar */
-.menu-item.active::before {
-    content: '';
-    position: absolute;
-    left: 0; top: 20%; bottom: 20%;
-    width: 3px;
-    background: rgb(var(--theme));
-    border-radius: 0 3px 3px 0;
-    box-shadow: 0 0 18px rgba(var(--theme), 0.9), 0 0 8px rgba(var(--theme), 0.6);
+.menu-item.active {
+    z-index: 2;
+}
+
+.menu-item.active .item-icon,
+.menu-item.active .item-name,
+.menu-item.active .item-arrow,
+.menu-item.active .item-name-wrap,
+.menu-item.active .toggle-switch,
+.menu-item.active .slider-container,
+.menu-item.active .array-container,
+.menu-item.active .bind-badge,
+.menu-item.active .keybind-badge,
+.menu-item.active .info-value,
+.menu-item.active .color-preview {
+    position: relative;
     z-index: 3;
 }
 
 .menu-item.active .item-icon {
-    color: rgb(var(--theme));
-    text-shadow: 0 0 12px rgba(var(--theme), 0.7);
+    color: #fff;
+    filter: none;
 }
 
 .menu-item.active .item-name {
     color: #fff;
     font-weight: 500;
-    padding-left: 4px;
-    text-shadow: 0 0 14px rgba(var(--theme), 0.4);
+    text-shadow: none;
 }
 
 .menu-item.active .item-arrow {
-    color: rgb(var(--theme));
+    color: rgba(255, 255, 255, 0.7);
     opacity: 1;
-    transform: translateX(2px);
-    text-shadow: 0 0 10px rgba(var(--theme), 0.6);
 }
 
 /* ─── Click state ─── */
 .menu-item.pressed {
-    transform: scale(0.975);
+    transform: scale(0.992);
     transition: transform 0.08s ease;
 }
 
@@ -371,9 +513,9 @@ body.dui-mode .menu-container:not(.hidden) {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 16px;
-    background: rgba(0,0,0,0.35);
-    border-top: 1px solid rgba(var(--theme), 0.08);
+    padding: 14px 16px;
+    background: #02040A;
+    border-top: 1px solid rgba(255,255,255,0.05);
     font-size: 12px;
     color: var(--text-muted);
     font-weight: 600;
@@ -384,17 +526,18 @@ body.dui-mode .menu-container:not(.hidden) {
 .footer .discord {
     transition: color 0.25s;
     cursor: pointer;
+    color: #888;
 }
-.footer .discord:hover { color: rgb(var(--theme)); }
+.footer .discord:hover { color: #fff; }
 
 .footer .page-count {
-    background: rgba(var(--theme), 0.08);
-    border: 1px solid rgba(var(--theme), 0.15);
-    padding: 3px 10px;
-    border-radius: 20px;
-    color: #ccc;
+    background: #0F172A;
+    border: none;
+    padding: 5px 12px;
+    border-radius: 6px;
+    color: #3B82F6;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 /* ───────── UI Components ───────── */
@@ -416,10 +559,9 @@ body.dui-mode .menu-container:not(.hidden) {
 }
 .slider-fill {
     height: 100%;
-    background: rgb(var(--theme));
+    background: #0f62fe;
     border-radius: 4px;
     transition: width 0.1s ease;
-    box-shadow: 0 0 8px rgba(var(--theme), 0.4);
 }
 .slider-value {
     font-size: 11px;
@@ -437,7 +579,7 @@ body.dui-mode .menu-container:not(.hidden) {
     background: rgba(255,255,255,0.08);
     border-radius: 18px;
     position: relative;
-    transition: background 0.3s ease, box-shadow 0.3s ease;
+    transition: background 0.3s ease;
     margin-right: 5px;
     z-index: 2;
 }
@@ -452,22 +594,11 @@ body.dui-mode .menu-container:not(.hidden) {
     transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease;
 }
 .toggle-switch.on {
-    background: rgb(var(--theme));
-    box-shadow: 0 0 16px rgba(var(--theme), 0.5), 0 0 6px rgba(var(--theme), 0.3);
+    background: #0f62fe;
 }
 .toggle-switch.on .toggle-knob {
     background: #fff;
     transform: translateX(16px);
-}
-
-/* Transitions */
-.menu-list {
-    transition: height 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-                transform 0.15s cubic-bezier(0.16, 1, 0.3, 1),
-                opacity 0.15s ease;
-}
-.menu-list.fade-out {
-    opacity: 0;
 }
 
 /* ───────── Separator ───────── */
@@ -830,10 +961,112 @@ body.dui-mode .menu-container:not(.hidden) {
     padding: 10px 0;
 }
 
+/* ───────── Watermark ───────── */
+.watermark-container {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    display: flex;
+    gap: 8px;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+
+
+.watermark-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    border-radius: 12px;
+    background: rgba(22, 18, 32, 0.75); /* Darker tint of blue/purple with alpha */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    color: #cfcfcf;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+}
+
+.watermark-pill .wm-icon {
+    color: rgb(var(--theme));
+    width: 15px;
+    height: 15px;
+}
+
+@keyframes textShine {
+    0% { background-position: 200% center; }
+    100% { background-position: 0% center; }
+}
+
+.watermark-pill .wm-highlight {
+    background: linear-gradient(
+        to right,
+        #ffffff 0%,
+        rgba(var(--theme), 0.7) 25%,
+        #ffffff 50%,
+        rgba(var(--theme), 0.7) 75%,
+        #ffffff 100%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: textShine 5s linear infinite;
+    font-weight: 800;
+}
+
+.watermark-pill .wm-green {
+    background: linear-gradient(
+        to right,
+        #2ecc71 0%,
+        #82ffb6 25%,
+        #2ecc71 50%,
+        #82ffb6 75%,
+        #2ecc71 100%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: textShine 5s linear infinite;
+    font-weight: 800;
+}
+
 </style>
     <!-- No external CDN fonts/icons in DUI — they block page load for 30s+ in-game. -->
 </head>
 <body>
+    <!-- Watermarks -->
+    <div class="watermark-container">
+        <div class="watermark-pill">
+            <svg class="wm-icon" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="32" y="64" width="192" height="128" rx="16" stroke-width="20"></rect><line x1="68" y1="112" x2="68" y2="112" stroke-width="24"></line><line x1="108" y1="112" x2="108" y2="112" stroke-width="24"></line><line x1="148" y1="112" x2="148" y2="112" stroke-width="24"></line><line x1="188" y1="112" x2="188" y2="112" stroke-width="24"></line><line x1="96" y1="152" x2="160" y2="152" stroke-width="20"></line></svg>
+            <span class="wm-highlight">Hotkeys</span>
+        </div>
+        <div class="watermark-pill">
+            <svg class="wm-icon" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"><path d="M152,208V160a8,8,0,0,0-8-8H112a8,8,0,0,0-8,8v48"></path><path d="M224,115.5V208a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V115.5a16,16,0,0,1,5.2-11.8l80-75.5a16,16,0,0,1,21.6,0l80,75.5A16,16,0,0,1,224,115.5Z"></path></svg>
+            <span class="wm-highlight">Solaris</span>
+        </div>
+        <div class="watermark-pill">
+            <svg class="wm-icon" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"><circle cx="128" cy="96" r="64"></circle><path d="M31,216a112,112,0,0,1,194,0"></path></svg>
+            <span class="wm-highlight">Nevyhua</span>
+        </div>
+        <div class="watermark-pill">
+            <svg class="wm-icon" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"><circle cx="128" cy="128" r="44"></circle><path d="M183.7,65.1q3.8,3.5,7.2,7.2l27.3-3.9a103.2,103.2,0,0,1,10.2,24.6l-25.6,10.6a88.1,88.1,0,0,1,0,52.8l25.6,10.6a103.2,103.2,0,0,1-10.2,24.6l-27.3-3.9q-3.4,3.7-7.2,7.2l-3.9,27.3a103.2,103.2,0,0,1-24.6,10.2l-10.6-25.6a88.1,88.1,0,0,1-52.8,0l-10.6,25.6a103.2,103.2,0,0,1-24.6-10.2l-3.9-27.3q-3.8-3.5-7.2-7.2l-27.3,3.9a103.2,103.2,0,0,1-10.2-24.6l25.6-10.6a88.1,88.1,0,0,1,0-52.8L12,96.8A103.2,103.2,0,0,1,22.2,72.2l27.3,3.9q3.4-3.7,7.2-7.2l3.9-27.3a103.2,103.2,0,0,1,24.6-10.2l10.6,25.6a88.1,88.1,0,0,1,52.8,0l10.6-25.6a103.2,103.2,0,0,1,24.6,10.2Z"></path></svg>
+            <span class="wm-highlight">Release</span>
+        </div>
+        <div class="watermark-pill">
+            <svg class="wm-icon" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"><rect x="32" y="48" width="192" height="128" rx="16"></rect><line x1="128" y1="176" x2="128" y2="216"></line><line x1="88" y1="216" x2="168" y2="216"></line></svg>
+            <span class="wm-green">84</span> fps
+        </div>
+        <div class="watermark-pill">
+            <svg class="wm-icon" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="200" y1="40" x2="200" y2="216" stroke-width="24"></line><line x1="144" y1="96" x2="144" y2="216" stroke-width="24"></line><line x1="88" y1="152" x2="88" y2="216" stroke-width="24"></line><line x1="32" y1="192" x2="32" y2="216" stroke-width="24"></line></svg>
+            <span class="wm-green">14</span> Ping
+        </div>
+    </div>
+
     <!-- Loading / Keybind Overlay -->
     <div class="loader-overlay hidden" id="loader-overlay">
         <div class="loader-box">
@@ -851,14 +1084,7 @@ body.dui-mode .menu-container:not(.hidden) {
     <div class="menu-container hidden" id="menu-container">
         <!-- Header Banner -->
         <div class="header-banner">
-            <div class="banner-identity">
-                <img class="bi-avatar" id="bi-avatar" src="https://cdn.discordapp.com/embed/avatars/0.png" alt="">
-                <div class="bi-text">
-                    <span class="bi-name" id="bi-name">Solaris</span>
-                    <span class="bi-sub" id="bi-sub">loading…</span>
-                </div>
-            </div>
-            <div class="banner-brand">Solaris</div>
+            <!-- Background image handles the banner graphics now -->
         </div>
 
         <!-- Tabs — rendered dynamically by JS -->
@@ -873,8 +1099,11 @@ body.dui-mode .menu-container:not(.hidden) {
                 <span class="scroll-arrow-bottom">▼</span>
             </div>
 
-            <div class="menu-list" id="menu-list">
-                <!-- Javascript will inject list items here -->
+            <div class="menu-selector" id="menu-selector" aria-hidden="true"></div>
+            <div class="menu-viewport" id="menu-viewport">
+                <div class="menu-list" id="menu-list">
+                    <!-- Javascript will inject list items here -->
+                </div>
             </div>
         </div>
 
@@ -919,7 +1148,7 @@ body.dui-mode .menu-container:not(.hidden) {
 
     /* ───────────────────────── Theme engine ───────────────────────── */
     var Theme = (function () {
-        var currentRgb = [181, 0, 0];
+        var currentRgb = [3, 252, 240];
         var rainbowRaf = null;
 
         function hexToRgb(hex) {
@@ -990,6 +1219,9 @@ body.dui-mode .menu-container:not(.hidden) {
     var dom = {};
     function cacheDom() {
         dom.container = document.getElementById("menu-container");
+        dom.content = document.querySelector(".content");
+        dom.viewport = document.getElementById("menu-viewport");
+        dom.selector = document.getElementById("menu-selector");
         dom.list = document.getElementById("menu-list");
         dom.pageCount = document.getElementById("page-count");
         dom.tabs = document.querySelector(".tabs");
@@ -1014,12 +1246,48 @@ body.dui-mode .menu-container:not(.hidden) {
      *  VIEW — renders pages, items, highlight, scrollbar, header, toasts
      * ==========================================================================*/
     var View = (function () {
-        var MENU_MAX_HEIGHT = 310;
-        var MENU_MIN_HEIGHT = 64;
+        var MENU_MAX_HEIGHT = 500;
+        var MENU_MIN_HEIGHT = 48;
+
+        /* 1 = Normal, 2 = Smooth, 3 = Very Smooth */
+        var scrollMode = 2;
+        var SCROLL_LERP = { 1: 1, 2: 0.14, 3: 0.065 };
+        var SEL_MS = { 1: 0, 2: 280, 3: 400 };
+        var PAGE_OUT_MS = 85;
+        var PAGE_IN_MS = 320;
 
         var currentItems = [];
-        var activeIndex = 0;
+        var activeIndex = -1;
         var transitioning = false;
+        var scrollLoop = { raf: null, target: 0 };
+
+        /* ---- Helper to convert FontAwesome classes to FA Solid SVG paths ---- */
+        function getIconSvg(cls) {
+            if (!cls) return "";
+            var p = "", vb = "0 0 512 512";
+            if (cls.indexOf("fa-user") > -1) { vb = "0 0 448 512"; p = "M224 256A128 128 0 1 0 224 0a128 128 0 1 0 0 256zm-45.7 48C79.8 304 0 383.8 0 482.3C0 498.7 13.3 512 29.7 512H418.3c16.4 0 29.7-13.3 29.7-29.7C448 383.8 368.2 304 269.7 304H178.3z"; }
+            else if (cls.indexOf("fa-eye") > -1) { vb = "0 0 576 512"; p = "M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 92.9-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.8-35.7-46.1-87.7-92.9-131.1C433.5 68.8 368.8 32 288 32zM144 256a144 144 0 1 1 288 0 144 144 0 1 1 -288 0zm144-64c0 35.3-28.7 64-64 64c-7.1 0-13.9-1.2-20.3-3.3c-5.5-1.8-11.9 1.6-11.7 7.5c.5 14.5 5.3 28.3 13.6 39.7C228.4 326.8 256 344 288 344c48.6 0 88-39.4 88-88c0-48.6-39.4-88-88-88c-10.4 0-20.3 1.8-29.5 5.1c-5.7 2.1-7.7 9.1-4 13.9c10 12.8 15.5 28.5 15.5 45z"; }
+            else if (cls.indexOf("fa-gun") > -1) { vb = "0 0 576 512"; p = "M528 56c0-13.3-10.7-24-24-24s-24 10.7-24 24v8H32C14.3 64 0 78.3 0 96V208c0 17.7 14.3 32 32 32H42c20.8 0 36.1 19.6 31 39.8L33 440.2c-2.4 9.6-.2 19.7 5.8 27.5S54.1 480 64 480h96c14.7 0 27.5-10 31-24.2L217 352H321.4c23.7 0 44.8-14.9 52.7-37.2L400.9 240H432c8.5 0 16.6-3.4 22.6-9.4L477.3 208H544c17.7 0 32-14.3 32-32V96c0-17.7-14.3-32-32-32H528V56zM321.4 304H229l16-64h105l-21 58.7c-1.1 3.2-4.2 5.3-7.5 5.3zM80 128H464c8.8 0 16 7.2 16 16s-7.2 16-16 16H80c-8.8 0-16-7.2-16-16s7.2-16 16-16z"; }
+            else if (cls.indexOf("fa-crosshairs") > -1) { vb = "0 0 512 512"; p = "M256 0c17.7 0 32 14.3 32 32V42.4c93.7 13.9 167.7 88 181.6 181.6H480c17.7 0 32 14.3 32 32s-14.3 32-32 32H469.6c-13.9 93.7-88 167.7-181.6 181.6V480c0 17.7-14.3 32-32 32s-32-14.3-32-32V469.6C130.3 455.7 56.3 381.7 42.4 288H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H42.4C56.3 130.3 130.3 56.3 224 42.4V32c0-17.7 14.3-32 32-32zM107.4 288c12.5 58.3 58.4 104.1 116.6 116.6V384c0-17.7 14.3-32 32-32s32 14.3 32 32v20.6c58.3-12.5 104.1-58.4 116.6-116.6H384c-17.7 0-32-14.3-32-32s14.3-32 32-32h20.6C392.1 165.7 346.3 119.9 288 107.4V128c0 17.7-14.3 32-32 32s-32-14.3-32-32V107.4C165.7 119.9 119.9 165.7 107.4 224H128c17.7 0 32 14.3 32 32s-14.3 32-32 32H107.4zM256 224a32 32 0 1 1 0 64 32 32 0 1 1 0-64z"; }
+            else if (cls.indexOf("fa-burst") > -1) { vb = "0 0 512 512"; p = "M37.6 4.2C28-2.3 15.2-1.1 7 7s-9.4 21-2.8 30.5l112 163.3L16.6 233.2C6.7 236.4 0 245.6 0 256s6.7 19.6 16.6 22.8l103.1 33.4L66.8 412.8c-4.9 9.3-3.2 20.7 4.3 28.1s18.8 9.2 28.1 4.3l100.6-52.9 33.4 103.1c3.2 9.9 12.4 16.6 22.8 16.6s19.6-6.7 22.8-16.6l33.4-103.1 100.6 52.9c9.3 4.9 20.7 3.2 28.1-4.3s9.2-18.8 4.3-28.1L392.3 312.2l103.1-33.4c9.9-3.2 16.6-12.4 16.6-22.8s-6.7-19.6-16.6-22.8L388.9 198.7l25.7-70.4c3.2-8.8 1-18.6-5.6-25.2s-16.4-8.8-25.2-5.6l-70.4 25.7L278.8 16.6C275.6 6.7 266.4 0 256 0s-19.6 6.7-22.8 16.6l-32.3 99.6L37.6 4.2z"; }
+            else if (cls.indexOf("fa-car") > -1) { vb = "0 0 512 512"; p = "M135.2 117.4L109.1 192H402.9l-26.1-74.6C372.3 104.6 360.2 96 346.6 96H165.4c-13.6 0-25.7 8.6-30.2 21.4zM39.6 196.8L74.8 96.3C88.3 57.8 124.6 32 165.4 32H346.6c40.8 0 77.1 25.8 90.6 64.3l35.2 100.5c23.2 9.6 39.6 32.5 39.6 59.2V400v48c0 17.7-14.3 32-32 32H448c-17.7 0-32-14.3-32-32V400H96v48c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32V400 256c0-26.7 16.4-49.6 39.6-59.2zM128 288a32 32 0 1 0 -64 0 32 32 0 1 0 64 0zm288 32a32 32 0 1 0 0-64 32 32 0 1 0 0 64z"; }
+            else if (cls.indexOf("fa-gear") > -1) { vb = "0 0 512 512"; p = "M495.9 166.6c3.2 8.7 .5 18.4-6.4 24.6l-43.3 39.4c1.1 8.3 1.7 16.8 1.7 25.4s-.6 17.1-1.7 25.4l43.3 39.4c6.9 6.2 9.6 15.9 6.4 24.6c-4.4 11.9-9.7 23.3-15.8 34.3l-4.7 8.1c-6.6 11-14 21.4-22.1 31.2c-5.9 7.2-15.7 9.6-24.5 6.8l-55.7-17.7c-13.4 10.3-28.2 18.9-44 25.4l-12.5 57.1c-2 9.1-9 16.3-18.2 17.8c-13.8 2.3-28 3.5-42.5 3.5s-28.7-1.2-42.5-3.5c-9.2-1.5-16.2-8.7-18.2-17.8l-12.5-57.1c-15.8-6.5-30.6-15.1-44-25.4L83.1 425.9c-8.8 2.8-18.6 .3-24.5-6.8c-8.1-9.8-15.5-20.2-22.1-31.2l-4.7-8.1c-6.1-11-11.4-22.4-15.8-34.3c-3.2-8.7-.5-18.4 6.4-24.6l43.3-39.4C64.6 273.1 64 264.6 64 256s.6-17.1 1.7-25.4L22.4 191.2c-6.9-6.2-9.6-15.9-6.4-24.6c4.4-11.9 9.7-23.3 15.8-34.3l4.7-8.1c6.6-11 14-21.4 22.1-31.2c5.9-7.2 15.7-9.6 24.5-6.8l55.7 17.7c13.4-10.3 28.2-18.9 44-25.4l12.5-57.1c2-9.1 9-16.3 18.2-17.8C227.3 1.2 241.5 0 256 0s28.7 1.2 42.5 3.5c9.2 1.5 16.2 8.7 18.2 17.8l12.5 57.1c15.8 6.5 30.6 15.1 44 25.4l55.7-17.7c8.8-2.8 18.6-.3 24.5 6.8c8.1 9.8 15.5 20.2 22.1 31.2l4.7 8.1c6.1 11 11.4 22.4 15.8 34.3zM256 336a80 80 0 1 0 0-160 80 80 0 1 0 0 160z"; }
+            else if (cls.indexOf("fa-shield") > -1) { vb = "0 0 512 512"; p = "M256 0c-4.1 0-8.1 1.4-11.3 4.1L32 188.7c-18.4 15.6-32 37.8-32 63.3V384c0 47.9 28 92.1 72.4 112l161.4 72.8c7.4 3.4 16 3.4 23.4 0l161.4-72.8c44.4-20 72.4-64.1 72.4-112V252c0-25.5-13.6-47.7-32-63.3L267.3 4.1C264.1 1.4 260.1 0 256 0zm0 464V48L464 220v164L256 464z"; }
+            else if (cls.indexOf("fa-person") > -1) { vb = "0 0 448 512"; p = "M320 48a48 48 0 1 0 -96 0 48 48 0 1 0 96 0zM125.7 175.5c9.9-9.9 23.4-15.5 37.5-15.5c1.9 0 3.8 .1 5.6 .3L137.6 96c-4.3-17 4.1-34.9 20.3-40.8s33.8 1.4 41.5 17.5l56 116.6c7.4 15.4 6 33.6-3.8 47.8l-45.1 65.2 25.1 50.2 67.2-33.6c15.8-7.9 34.8-1.5 42.7 14.3s1.5 34.8-14.3 42.7l-96 48c-9.1 4.5-19.8 4-28.5-1.4L136 328l-40.4 40.4c-11.4 11.4-29.4 12.8-42.4 3.1s-14.4-28.4-3.1-41.4l51.1-51.1-37-74-45 15c-16.7 5.6-34.9-3.4-40.5-20.1s3.4-34.9 20.1-40.5l72-24c13.4-4.5 28.3-.9 38.2 9l34.8 34.8-21.1-30.5c-4.2-6.1-4.7-14.1-1.3-20.7l22.3-43.2z"; }
+            else if (cls.indexOf("fa-gauge") > -1) { vb = "0 0 512 512"; p = "M0 256a256 256 0 1 1 512 0A256 256 0 1 1 0 256zm320 96c0-26.9-16.5-49.9-40-59.3V88c0-13.3-10.7-24-24-24s-24 10.7-24 24v204.7c-23.5 9.5-40 32.5-40 59.3c0 35.3 28.7 64 64 64s64-28.7 64-64zM144 176a32 32 0 1 0 0-64 32 32 0 1 0 0 64zm-16 80a32 32 0 1 0 -64 0 32 32 0 1 0 64 0zm256-80a32 32 0 1 0 0-64 32 32 0 1 0 0 64zm16 80a32 32 0 1 0 -64 0 32 32 0 1 0 64 0z"; }
+            else if (cls.indexOf("fa-kit-medical") > -1 || cls.indexOf("fa-briefcase") > -1) { vb = "0 0 512 512"; p = "M144 112V64c0-35.3 28.7-64 64-64h96c35.3 0 64 28.7 64 64v48h80c35.3 0 64 28.7 64 64v256c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V176c0-35.3 28.7-64 64-64h80zM208 64v48h96V64H208zM192 256v64H128c-17.7 0-32 14.3-32 32s14.3 32 32 32h64v64c0 17.7 14.3 32 32 32s32-14.3 32-32v-64h64c17.7 0 32-14.3 32-32s-14.3-32-32-32h-64v-64c0-17.7-14.3-32-32-32s-32 14.3-32 32z"; }
+            else if (cls.indexOf("fa-video") > -1) { vb = "0 0 576 512"; p = "M0 128C0 92.7 28.7 64 64 64H320c35.3 0 64 28.7 64 64V384c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V128zM559.1 99.8c10.4 5.6 16.9 16.4 16.9 28.2V384c0 11.8-6.5 22.6-16.9 28.2s-23 5-32.9-1.6l-96-64L416 337.1V320 192 174.9l14.2-9.5 96-64c9.8-6.5 22.4-7.2 32.9-1.6z"; }
+            else if (cls.indexOf("fa-clock") > -1) { vb = "0 0 512 512"; p = "M256 0a256 256 0 1 1 0 512A256 256 0 1 1 256 0zM232 120V256c0 8 4 15.5 10.7 20l96 64c11 7.4 25.9 4.4 33.3-6.7s4.4-25.9-6.7-33.3L280 243.2V120c0-13.3-10.7-24-24-24s-24 10.7-24 24z"; }
+            else if (cls.indexOf("fa-palette") > -1) { vb = "0 0 512 512"; p = "M512 256c0 .9 0 1.8 0 2.7c-.4 36.5-33.6 61.3-70.1 61.3H344c-26.5 0-48 21.5-48 48c0 3.4 .4 6.7 1 9.9c7.1 38.6-21.1 74.1-60.2 74.1H224c-123.7 0-224-100.3-224-224S100.3 32 224 32s224 100.3 224 224zM112 288a48 48 0 1 0 -96 0 48 48 0 1 0 96 0zm112-80a48 48 0 1 0 0-96 48 48 0 1 0 0 96zm128-48a48 48 0 1 0 -96 0 48 48 0 1 0 96 0zm96 112a48 48 0 1 0 0-96 48 48 0 1 0 0 96z"; }
+            else if (cls.indexOf("fa-rainbow") > -1) { vb = "0 0 512 512"; p = "M0 480C0 338.6 114.6 224 256 224s256 114.6 256 256H448C448 374 362 288 256 288S64 374 64 480H0zM96 480C96 391.6 167.6 320 256 320s160 71.6 160 160H352C352 427 299 384 256 384S160 427 160 480H96zM192 480C192 444.6 220.6 416 256 416S320 444.6 320 480H192z"; }
+            else if (cls.indexOf("fa-id") > -1) { vb = "0 0 384 512"; p = "M64 48c-8.8 0-16 7.2-16 16V448c0 8.8 7.2 16 16 16H320c8.8 0 16-7.2 16-16V64c0-8.8-7.2-16-16-16H64zM0 64C0 28.7 28.7 0 64 0H320c35.3 0 64 28.7 64 64V448c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V64zm192 208a64 64 0 1 1 0-128 64 64 0 1 1 0 128zm0-168a104 104 0 1 0 0 208 104 104 0 1 0 0-208zM128 352h128c26.5 0 48 21.5 48 48v16c0 17.7-14.3 32-32 32H112c-17.7 0-32-14.3-32-32V400c0-26.5 21.5-48 48-48z"; }
+            else if (cls.indexOf("fa-wrench") > -1) { vb = "0 0 512 512"; p = "M393.2 23.4c-35.6-31.1-90.5-27-121.7 8.5c-27.1 30.7-27.1 76 0 106.7L18.6 391.6c-24.8 24.8-24.8 65.1 0 89.9s65.1 24.8 89.9 0L361.3 228.6c30.7 27.1 76 27.1 106.7 0c35.6-31.1 39.7-86 8.5-121.7L426 157.4l-58.4-58.4L418.1 48.6 393.2 23.4zM324.9 154l58.4 58.4 48.6-48.6L373.5 105.4 324.9 154z"; }
+            else if (cls.indexOf("fa-bolt") > -1 || cls.indexOf("fa-lightning") > -1) { vb = "0 0 320 512"; p = "M319.6 153.9c-.3-8.4-7.5-15.1-15.9-15.1l-143.7 0 54.4-118c2.9-6.3 .2-13.8-6.1-16.7s-13.8-.2-16.7 6.1L2.8 316.5c-4.4 9.5-.2 20.9 9.3 25.3c1.5 .7 3.2 1.2 4.9 1.4l148 11.2-54.4 118c-2.9 6.3-.2 13.8 6.1 16.7c1.7 .8 3.5 1.1 5.3 1.1c4.5 0 8.8-2.6 10.8-7l188.8-306.4c3.4-5.5 2.6-12.7-1.9-17.2s-10.4-5.8-16.1-4.7l-156.4 30.1 55.4-120.1z"; }
+            else if (cls.indexOf("fa-keyboard") > -1) { vb = "0 0 576 512"; p = "M64 64C28.7 64 0 92.7 0 128V384c0 35.3 28.7 64 64 64H512c35.3 0 64-28.7 64-64V128c0-35.3-28.7-64-64-64H64zM224 400H128c-17.7 0-32-14.3-32-32s14.3-32 32-32h96c17.7 0 32 14.3 32 32s-14.3 32-32 32zm48-96c-17.7 0-32-14.3-32-32s14.3-32 32-32s32 14.3 32 32s-14.3 32-32 32zm128 0c-17.7 0-32-14.3-32-32s14.3-32 32-32s32 14.3 32 32s-14.3 32-32 32zm64-96c-17.7 0-32-14.3-32-32s14.3-32 32-32s32 14.3 32 32s-14.3 32-32 32z"; }
+            else if (cls.indexOf("fa-discord") > -1) { vb = "0 0 640 512"; p = "M524.5 69.8a1.5 1.5 0 0 0 -.8-.7A485.1 485.1 0 0 0 404.1 32a1.8 1.8 0 0 0 -1.9 .9 337.5 337.5 0 0 0 -14.9 30.6 447.8 447.8 0 0 0 -134.4 0 309.5 309.5 0 0 0 -15.1-30.6 1.9 1.9 0 0 0 -1.9-.9A483.7 483.7 0 0 0 116.1 69.1a1.7 1.7 0 0 0 -.8 .7C39.1 183.7 18.2 294.7 28.4 404.4a2 2 0 0 0 .8 1.4A487.7 487.7 0 0 0 176 479.9a1.9 1.9 0 0 0 2.1-.7A348.2 348.2 0 0 0 208.1 430.4a1.9 1.9 0 0 0 -1-2.6 321.2 321.2 0 0 1 -45.9-21.9 1.9 1.9 0 0 1 -.2-3.1c3.1-2.3 6.2-4.7 9.1-7.1a1.8 1.8 0 0 1 1.9-.3c96.2 43.9 200.4 43.9 295.5 0a1.8 1.8 0 0 1 1.9 .2c2.9 2.4 6 4.9 9.1 7.2a1.9 1.9 0 0 1 -.2 3.1 301.4 301.4 0 0 1 -45.9 21.8 1.9 1.9 0 0 0 -1 2.6 391 391 0 0 0 30 48.8 1.9 1.9 0 0 0 2.1 .7A486 486 0 0 0 610.7 405.7a1.9 1.9 0 0 0 .8-1.4C623.7 277.6 590.9 167.5 524.5 69.8zM222.5 337.6c-29 0-52.8-26.6-52.8-59.2S193.1 219.1 222.5 219.1c29.7 0 53.3 26.8 52.8 59.2C275.3 311 251.9 337.6 222.5 337.6zm195.4 0c-29 0-52.8-26.6-52.8-59.2S388.4 219.1 417.9 219.1c29.7 0 53.3 26.8 52.8 59.2C470.7 311 447.5 337.6 417.9 337.6z"; }
+            else p = "M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512z";
+            return '<svg class="menu-svg-icon" viewBox="' + vb + '" fill="currentColor">' + '<path d="' + p + '"></path></svg>';
+        }
 
         /* ---- Item markup builder (superset of every supported control) ---- */
         function buildItemHtml(item, i) {
@@ -1034,7 +1302,7 @@ body.dui-mode .menu-container:not(.hidden) {
             var right = "";
             switch (item.type) {
                 case "submenu":
-                    right = '<span class="item-arrow">›</span>';
+                    right = '<span class="item-arrow" aria-hidden="true">&gt;</span>';
                     break;
                 case "toggle":
                     right = '<div class="toggle-switch ' + (item.value ? "on" : "") + '"><div class="toggle-knob"></div></div>';
@@ -1049,7 +1317,7 @@ body.dui-mode .menu-container:not(.hidden) {
                     break;
                 }
                 case "action":
-                    right = '<span class="item-arrow" style="opacity:0.3">›</span>';
+                    right = '<span class="item-arrow item-arrow--dim" aria-hidden="true">&gt;</span>';
                     break;
                 case "array": {
                     var label = (item.options && item.options[item.value] != null)
@@ -1080,8 +1348,8 @@ body.dui-mode .menu-container:not(.hidden) {
                     break;
             }
 
-            var iconHtml = item.icon
-                ? '<span class="item-icon">▸</span>' : "";
+            var iconHtml = (item.type === "submenu" && item.icon)
+                ? '<span class="item-icon">' + getIconSvg(item.icon) + '</span>' : "";
 
             var nameHtml;
             if (item.desc) {
@@ -1098,8 +1366,8 @@ body.dui-mode .menu-container:not(.hidden) {
             var bindHtml = "";
             if (item.listening) {
                 bindHtml = '<span class="bind-badge listening">[ press key ]</span>';
-            } else if (item.bind) {
-                bindHtml = '<span class="bind-badge">' + esc(item.bind) + '</span>';
+            } else if (item.bind || item.keyStr) {
+                bindHtml = '<span class="bind-badge">' + esc(item.bind || item.keyStr) + '</span>';
             }
 
             var cls = "menu-item" + (item.type === "info" ? " is-info" : "");
@@ -1107,49 +1375,202 @@ body.dui-mode .menu-container:not(.hidden) {
                    iconHtml + nameHtml + bindHtml + right + '</div>';
         }
 
+        function getScrollLerp() {
+            return SCROLL_LERP[scrollMode] != null ? SCROLL_LERP[scrollMode] : SCROLL_LERP[2];
+        }
+
+        function getSelectorMs() {
+            return SEL_MS[scrollMode] != null ? SEL_MS[scrollMode] : SEL_MS[2];
+        }
+
+        function setScrollMode(mode) {
+            var m = parseInt(mode, 10);
+            scrollMode = (m >= 1 && m <= 3) ? m : 2;
+        }
+
+        function stopScrollLoop() {
+            if (scrollLoop.raf) {
+                cancelAnimationFrame(scrollLoop.raf);
+                scrollLoop.raf = null;
+            }
+        }
+
+        function computeScrollTarget(node) {
+            if (!node || !dom.list) return 0;
+            var list = dom.list;
+            var pad = 10;
+            var itemTop = node.offsetTop;
+            var itemH = node.offsetHeight;
+            var viewH = list.clientHeight;
+            var maxScroll = Math.max(0, list.scrollHeight - viewH);
+            var st = list.scrollTop;
+            var itemBottom = itemTop + itemH;
+            var viewBottom = st + viewH;
+            if (itemTop < st + pad) return Math.max(0, itemTop - pad);
+            if (itemBottom > viewBottom - pad) return Math.min(maxScroll, itemBottom - viewH + pad);
+            return st;
+        }
+
+        function runScrollLoop() {
+            if (!dom.list) return;
+            var lerp = getScrollLerp();
+            if (lerp >= 1) {
+                dom.list.scrollTop = scrollLoop.target;
+                stopScrollLoop();
+                updateScrollbar();
+                return;
+            }
+            var current = dom.list.scrollTop;
+            var diff = scrollLoop.target - current;
+            if (Math.abs(diff) < 0.5) {
+                dom.list.scrollTop = scrollLoop.target;
+                stopScrollLoop();
+                updateScrollbar();
+                return;
+            }
+            dom.list.scrollTop = current + diff * lerp;
+            updateScrollbar();
+            scrollLoop.raf = requestAnimationFrame(runScrollLoop);
+        }
+
+        function scrollToNode(node, instant) {
+            if (!node || !dom.list) return;
+            scrollLoop.target = computeScrollTarget(node);
+            stopScrollLoop();
+            if (instant || getScrollLerp() >= 1) {
+                dom.list.scrollTop = scrollLoop.target;
+                updateScrollbar();
+                return;
+            }
+            runScrollLoop();
+        }
+
+        function selectorTopForNode(node) {
+            if (!node || !dom.content) return 0;
+            var contentRect = dom.content.getBoundingClientRect();
+            var nodeRect = node.getBoundingClientRect();
+            return nodeRect.top - contentRect.top;
+        }
+
+        function syncSelectorToActive(animate) {
+            if (!dom.list || !dom.selector) return;
+            var node = dom.list.querySelector('.menu-item[data-index="' + activeIndex + '"]');
+            if (node) syncSelector(node, animate);
+        }
+
+        function bindListScrollSync() {
+            if (!dom.list || dom.list._selScrollBound) return;
+            dom.list._selScrollBound = true;
+            dom.list.addEventListener("scroll", function () {
+                if (transitioning) return;
+                syncSelectorToActive(false);
+            }, { passive: true });
+        }
+
+        function syncSelector(node, animate) {
+            if (!dom.selector || !node) return;
+            var ms = animate ? getSelectorMs() : 0;
+            dom.selector.style.visibility = "visible";
+            dom.selector.style.transition = ms
+                ? ("top " + ms + "ms cubic-bezier(0.22, 1, 0.36, 1), opacity 0.1s ease")
+                : "none";
+            dom.selector.style.height = node.offsetHeight + "px";
+            dom.selector.style.top = selectorTopForNode(node) + "px";
+            dom.selector.style.opacity = "1";
+        }
+
+        function hideSelector() {
+            if (!dom.selector) return;
+            dom.selector.style.transition = "none";
+            dom.selector.style.opacity = "0";
+            dom.selector.style.visibility = "hidden";
+        }
+
         function render(items, activeIdx, animateDir, onReady) {
+            bindListScrollSync();
             currentItems = items || [];
             var html = "";
             for (var i = 0; i < currentItems.length; i++) html += buildItemHtml(currentItems[i], i);
 
-            var commit = function () {
+            var commit = function (holdSelector) {
+                stopScrollLoop();
+                hideSelector();
                 dom.list.innerHTML = html;
                 dom.list.scrollTop = 0;
-                setActive(activeIdx);
+                setActive(activeIdx, true, true, !!holdSelector);
                 adjustHeight();
                 if (onReady) onReady();
             };
 
-            if (animateDir && !document.body.classList.contains("dui-mode")) {
+            if (animateDir && dom.viewport) {
                 transitioning = true;
-                dom.list.classList.add("fade-out");
-                dom.list.style.transform = animateDir === "forward" ? "translateX(-15px)" : "translateX(15px)";
+                hideSelector();
+                var fwd = animateDir === "forward";
+                dom.viewport.classList.remove(
+                    "page-out-forward", "page-out-backward",
+                    "page-in-forward", "page-in-backward"
+                );
+                dom.viewport.style.opacity = "";
+                dom.viewport.style.transform = "";
+                dom.viewport.style.filter = "";
+                dom.viewport.classList.add(fwd ? "page-out-forward" : "page-out-backward");
                 setTimeout(function () {
-                    commit();
-                    dom.list.style.transform = animateDir === "forward" ? "translateX(15px)" : "translateX(-15px)";
-                    dom.list.classList.remove("fade-out");
-                    requestAnimationFrame(function () { dom.list.style.transform = "translateX(0)"; });
-                    setTimeout(function () { transitioning = false; }, 150);
-                }, 150);
+                    commit(true);
+                    dom.viewport.classList.remove("page-out-forward", "page-out-backward");
+                    void dom.viewport.offsetWidth;
+                    dom.viewport.classList.add(fwd ? "page-in-forward" : "page-in-backward");
+                    requestAnimationFrame(function () {
+                        requestAnimationFrame(function () {
+                            syncSelectorToActive(true);
+                        });
+                    });
+                    setTimeout(function () {
+                        dom.viewport.classList.remove("page-in-forward", "page-in-backward");
+                        dom.viewport.style.opacity = "";
+                        dom.viewport.style.transform = "";
+                        dom.viewport.style.filter = "";
+                        syncSelectorToActive(false);
+                        transitioning = false;
+                    }, PAGE_IN_MS);
+                }, PAGE_OUT_MS);
             } else {
-                dom.list.style.transform = "translateX(0)";
-                commit();
+                if (dom.viewport) {
+                    dom.viewport.classList.remove(
+                        "page-out-forward", "page-out-backward",
+                        "page-in-forward", "page-in-backward"
+                    );
+                    dom.viewport.style.opacity = "";
+                    dom.viewport.style.transform = "";
+                    dom.viewport.style.filter = "";
+                }
+                commit(false);
             }
         }
 
-        function setActive(index) {
-            activeIndex = index;
-            var nodes = dom.list.children;
+        function setActive(index, instantScroll, instantSelector, holdSelector) {
+            var nodes = dom.list ? dom.list.children : [];
+            var activeNode = null;
             for (var i = 0; i < nodes.length; i++) {
                 if (!nodes[i].classList.contains("menu-item")) continue;
                 var idx = parseInt(nodes[i].getAttribute("data-index"), 10);
                 if (idx === index) {
                     nodes[i].classList.add("active");
-                    nodes[i].scrollIntoView({ block: "nearest", behavior: "instant" });
+                    activeNode = nodes[i];
                 } else {
                     nodes[i].classList.remove("active");
                 }
             }
+            activeIndex = index;
+            if (!activeNode) {
+                hideSelector();
+                updatePageCount();
+                updateScrollbar();
+                return;
+            }
+            if (!holdSelector) {
+                syncSelector(activeNode, !instantSelector && getSelectorMs() > 0);
+            }
+            scrollToNode(activeNode, !!instantScroll);
             updatePageCount();
             updateScrollbar();
         }
@@ -1166,10 +1587,49 @@ body.dui-mode .menu-container:not(.hidden) {
             dom.pageCount.textContent = (total ? num : 0) + "/" + total;
         }
 
+        function nodeForItemIndex(index) {
+            if (!dom.list) return null;
+            var node = dom.list.querySelector('.menu-item[data-index="' + index + '"]');
+            if (node) return node;
+            return dom.list.children[index] || null;
+        }
+
+        function refreshBindBadge(node, item) {
+            if (!node || !item) return;
+            if (item.type !== "toggle" && item.type !== "action") return;
+
+            var label = item.listening ? null : (item.bind || item.keyStr || null);
+            if (label === "" || label === false) label = null;
+            var existing = node.querySelector(".bind-badge");
+
+            if (item.listening) {
+                if (!existing) {
+                    existing = document.createElement("span");
+                    var ctrl = node.querySelector(".toggle-switch, .item-arrow");
+                    node.insertBefore(existing, ctrl || null);
+                }
+                existing.textContent = "[ press key ]";
+                existing.className = "bind-badge listening";
+                return;
+            }
+
+            if (label) {
+                if (!existing) {
+                    existing = document.createElement("span");
+                    var ctrl2 = node.querySelector(".toggle-switch, .item-arrow");
+                    node.insertBefore(existing, ctrl2 || null);
+                }
+                existing.textContent = label;
+                existing.className = "bind-badge";
+            } else if (existing) {
+                existing.parentNode.removeChild(existing);
+            }
+        }
+
         /* Patch a single item's control in place (no full re-render) */
         function updateItem(index, patch) {
             var item = currentItems[index];
-            var node = dom.list.children[index];
+            var node = nodeForItemIndex(index);
             if (!item || !node) return;
             for (var k in patch) if (patch.hasOwnProperty(k)) item[k] = patch[k];
 
@@ -1206,38 +1666,29 @@ body.dui-mode .menu-container:not(.hidden) {
                 }
             }
 
-            /* Generic inline bind badge (F11 universal keybind selector). */
-            if (item.type === "toggle" || item.type === "action") {
-                if (patch.hasOwnProperty("listening")) item.listening = !!patch.listening;
-                if (patch.hasOwnProperty("bind")) item.bind = patch.bind || null;
+            if (patch.hasOwnProperty("listening")) item.listening = !!patch.listening;
+            if (patch.hasOwnProperty("bind")) item.bind = patch.bind || null;
+            if (patch.hasOwnProperty("keyStr")) item.keyStr = patch.keyStr || null;
+            refreshBindBadge(node, item);
+        }
 
-                var existing = node.querySelector(".bind-badge");
-                if (item.listening) {
-                    if (!existing) {
-                        existing = document.createElement("span");
-                        existing.className = "bind-badge listening";
-                        var ctrl = node.querySelector(".toggle-switch, .item-arrow");
-                        node.insertBefore(existing, ctrl || null);
-                    }
-                    existing.textContent = "[ press key ]";
-                    existing.className = "bind-badge listening";
-                } else if (item.bind) {
-                    if (!existing) {
-                        existing = document.createElement("span");
-                        existing.className = "bind-badge";
-                        var ctrl2 = node.querySelector(".toggle-switch, .item-arrow");
-                        node.insertBefore(existing, ctrl2 || null);
-                    }
-                    existing.textContent = item.bind;
-                    existing.className = "bind-badge";
-                } else if (existing) {
-                    existing.parentNode.removeChild(existing);
-                }
+        function setBindBadge(index, label, listening) {
+            var item = currentItems[index];
+            var node = nodeForItemIndex(index);
+            if (!item || !node) return;
+            item.listening = !!listening;
+            if (label && label !== "") {
+                item.bind = label;
+                item.keyStr = label;
+            } else {
+                item.bind = null;
+                item.keyStr = null;
             }
+            refreshBindBadge(node, item);
         }
 
         function pressFeedback(index) {
-            var node = dom.list.children[index];
+            var node = nodeForItemIndex(index);
             if (!node) return;
             node.classList.add("pressed");
             setTimeout(function () { if (node) node.classList.remove("pressed"); }, 120);
@@ -1253,13 +1704,38 @@ body.dui-mode .menu-container:not(.hidden) {
             }
         }
 
+        function measureListContentHeight() {
+            if (!dom.list) return MENU_MIN_HEIGHT;
+            var sum = 0;
+            var kids = dom.list.children;
+            for (var i = 0; i < kids.length; i++) {
+                sum += kids[i].offsetHeight || 0;
+            }
+            var cs = window.getComputedStyle(dom.list);
+            var pad = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
+            return sum + pad;
+        }
+
         /* ---- Dynamic height + custom scrollbar ---- */
         function adjustHeight() {
+            if (!dom.list) return;
             dom.list.style.height = "auto";
-            var content = dom.list.scrollHeight;
-            var h = Math.max(MENU_MIN_HEIGHT, Math.min(content, MENU_MAX_HEIGHT));
+            dom.list.style.overflowY = "hidden";
+            var content = measureListContentHeight();
+            var h = content;
+            var needsScroll = content > MENU_MAX_HEIGHT;
+            if (needsScroll) h = MENU_MAX_HEIGHT;
+            if (h < MENU_MIN_HEIGHT) h = MENU_MIN_HEIGHT;
             dom.list.style.height = h + "px";
-            updateScrollbar();
+            dom.list.style.overflowY = needsScroll ? "auto" : "hidden";
+            if (dom.viewport) dom.viewport.style.height = h + "px";
+            requestAnimationFrame(function () {
+                updateScrollbar();
+                var node = dom.list.querySelector('.menu-item[data-index="' + activeIndex + '"]');
+                if (node && dom.selector && dom.selector.style.opacity !== "0") {
+                    syncSelector(node, false);
+                }
+            });
         }
 
         function updateScrollbar() {
@@ -1377,9 +1853,10 @@ body.dui-mode .menu-container:not(.hidden) {
 
         return {
             render: render, setActive: setActive, updateItem: updateItem,
+            setBindBadge: setBindBadge, refreshBindBadge: refreshBindBadge,
             pressFeedback: pressFeedback, flashArrow: flashArrow,
             renderTabs: renderTabs, setHeader: setHeader, setVisible: setVisible,
-            setPosition: setPosition, setScale: setScale,
+            setPosition: setPosition, setScale: setScale, setScrollMode: setScrollMode,
             notify: notify, updateScrollbar: updateScrollbar,
             isTransitioning: isTransitioning, items: items, getActive: getActive
         };
@@ -1427,13 +1904,18 @@ body.dui-mode .menu-container:not(.hidden) {
                 View.render(msg.items || [], msg.activeIndex != null ? msg.activeIndex : 0, msg.animateDir || null);
                 break;
             case "solaris:setActive":
-                /* Safety: if setVisible {true} was lost in transit, show on first
-                   navigation command (setActive only fires when menu is open). */
                 View.setVisible(true);
-                View.setActive(msg.index != null ? msg.index : 0);
+                View.setActive(msg.index != null ? msg.index : 0, false, false);
                 break;
             case "solaris:updateItem":
                 View.updateItem(msg.index, msg.patch || {});
+                break;
+            case "solaris:setBindBadge":
+                View.setBindBadge(
+                    msg.index != null ? msg.index : 0,
+                    msg.bind || msg.keyStr || null,
+                    !!msg.listening
+                );
                 break;
             case "solaris:setTheme":
                 if (msg.rainbow === true) Theme.startRainbow();
@@ -1445,6 +1927,9 @@ body.dui-mode .menu-container:not(.hidden) {
                 break;
             case "solaris:setScale":
                 View.setScale(msg.scale);
+                break;
+            case "solaris:setScrollMode":
+                View.setScrollMode(msg.mode != null ? msg.mode : 2);
                 break;
             case "solaris:notify":
                 View.notify(msg);
@@ -1527,9 +2012,11 @@ body.dui-mode .menu-container:not(.hidden) {
         var pages = {
             main: [
                 { label: "Self Options", type: "submenu", target: "self", icon: "fa-solid fa-user" },
-                { label: "Visual Options", type: "submenu", target: "visual", icon: "fa-solid fa-eye" },
+                { label: "Combat Options", type: "submenu", target: "combat", icon: "fa-solid fa-burst" },
+                { label: "Weapon Options", type: "submenu", target: "weaponry", icon: "fa-solid fa-gun" },
                 { label: "Vehicle Options", type: "submenu", target: "vehicle", icon: "fa-solid fa-car" },
-                { label: "Settings", type: "submenu", target: "settings", icon: "fa-solid fa-gear" }
+                { label: "Online Options", type: "submenu", target: "players", icon: "fa-solid fa-person" },
+                { label: "Misc Options", type: "submenu", target: "settings", icon: "fa-solid fa-gear" }
             ],
             self: [
                 { label: "Status", type: "separator" },
@@ -1542,7 +2029,7 @@ body.dui-mode .menu-container:not(.hidden) {
             visual: [
                 { label: "FOV", type: "slider", value: 50, min: 10, max: 130, icon: "fa-solid fa-video" },
                 { label: "Time", type: "array", value: 1, options: ["Dawn", "Day", "Dusk", "Night"], icon: "fa-solid fa-clock" },
-                { label: "Theme Color", type: "color", value: "#b50000", isTheme: true, icon: "fa-solid fa-palette" },
+                { label: "Theme Color", type: "color", value: "#03fcf0", isTheme: true, icon: "fa-solid fa-palette" },
                 { label: "Rainbow Theme", type: "toggle", value: false, isRainbow: true, icon: "fa-solid fa-rainbow" }
             ],
             vehicle: [
@@ -1664,7 +2151,7 @@ body.dui-mode .menu-container:not(.hidden) {
         function start() {
             document.body.classList.add("standalone");
             View.renderTabs(
-                [{ id: "main", label: "Main" }, { id: "protections", label: "Protections" }, { id: "settings", label: "Settings" }],
+                [{ id: "main", label: "Main" }, { id: "bypasses", label: "Bypasses" }, { id: "settings", label: "Settings" }],
                 "main",
                 function () { /* preview tabs are inert */ }
             );
@@ -1751,9 +2238,55 @@ body.dui-mode .menu-container:not(.hidden) {
         return false;
     }
 
+    function makeDraggable(el) {
+        if (!el) return;
+        var isDragging = false;
+        var startX, startY, initialX, initialY;
+
+        el.style.pointerEvents = "auto";
+        el.style.userSelect = "none";
+
+        el.addEventListener("mousedown", function(e) {
+            if (e.target.tagName === "INPUT" || e.target.tagName === "BUTTON") return;
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            var rect = el.getBoundingClientRect();
+            initialX = rect.left;
+            initialY = rect.top;
+            
+            el.style.position = "fixed";
+            el.style.zIndex = "10000";
+            el.style.right = 'auto';
+            el.style.bottom = 'auto';
+            el.style.left = initialX + "px";
+            el.style.top = initialY + "px";
+            el.style.margin = "0";
+            
+            e.preventDefault();
+        });
+
+        document.addEventListener("mousemove", function(e) {
+            if (!isDragging) return;
+            var dx = e.clientX - startX;
+            var dy = e.clientY - startY;
+            el.style.left = (initialX + dx) + "px";
+            el.style.top = (initialY + dy) + "px";
+        });
+
+        document.addEventListener("mouseup", function() {
+            isDragging = false;
+        });
+    }
+
     document.addEventListener("DOMContentLoaded", function () {
         cacheDom();
         dom.list.addEventListener("scroll", function () { View.updateScrollbar(); });
+
+        var pills = document.querySelectorAll(".watermark-pill");
+        for (var i = 0; i < pills.length; i++) {
+            makeDraggable(pills[i]);
+        }
 
         /* Normal browser / file = preview UI. FiveM CitizenFX = in-game DUI (transparent). */
         var forcePreview = /[?&]preview=1\b/.test(window.location.search)
@@ -1774,13 +2307,12 @@ body.dui-mode .menu-container:not(.hidden) {
                 { label: "Vehicle Options", type: "submenu", target: "vehicles" },
                 { label: "Online Options", type: "submenu", target: "players" },
                 { label: "World Options", type: "submenu", target: "server" },
-                { label: "Script Options", type: "submenu", target: "scripts" },
                 { label: "Misc Options", type: "submenu", target: "assists" }
             ];
             View.renderTabs(
                 [
                     { id: "main", label: "MAIN" },
-                    { id: "protections", label: "PROTECTIONS" },
+                    { id: "bypasses", label: "BYPASSES" },
                     { id: "settings", label: "SETTINGS" }
                 ],
                 "main",
