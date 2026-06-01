@@ -1693,16 +1693,29 @@ body.dui-mode .menu-container {
     })();
 
     /* ───────────────────────── Boot ───────────────────────── */
+    function isInGameDuiHost() {
+        try {
+            if (typeof window.invokeNative === "function") return true;
+            var ua = navigator.userAgent || "";
+            if (ua.indexOf("CitizenFX") !== -1) return true;
+        } catch (e) { /* ignore */ }
+        return false;
+    }
+
     document.addEventListener("DOMContentLoaded", function () {
         cacheDom();
         dom.list.addEventListener("scroll", function () { View.updateScrollbar(); });
 
-        // Enable preview/standalone mode only if explicitly requested (e.g. index.html?preview=1 or ?standalone=1)
-        var isPreviewMode = /[?&]preview=1\b/.test(window.location.search) || /[?&]standalone=1\b/.test(window.location.search);
+        /* Browser / file:// = show the real UI for editing & preview.
+           In-game FiveM DUI = transparent page, menu hidden until Lua sends messages. */
+        var forcePreview = /[?&]preview=1\b/.test(window.location.search)
+            || /[?&]standalone=1\b/.test(window.location.search);
+        var forceDui = /[?&]dui=1\b/.test(window.location.search);
+        var isPreviewMode = forcePreview
+            || (window.location.protocol === "file:" && !forceDui)
+            || (!isInGameDuiHost() && !forceDui);
 
         if (!isPreviewMode) {
-            // Default to Executor / DUI Mode:
-            // The body background is transparent, loader overlay is hidden, and we wait for Lua messages.
             document.documentElement.classList.add("dui-mode");
             document.body.classList.add("dui-mode");
             View.setVisible(false);
@@ -1712,20 +1725,26 @@ body.dui-mode .menu-container {
             return;
         }
 
-        // Standard Preview Mode
-        setTimeout(function () {
-            if (!driven) {
-                Loader.run(function(key) {
-                    if (key) {
-                        var settingsPage = Standalone.getPages().settings;
-                        if (settingsPage && settingsPage[0] && settingsPage[0].type === "keybind") {
-                            settingsPage[0].keyStr = key;
-                        }
-                    }
-                    Standalone.start();
-                });
+        document.body.classList.add("standalone");
+
+        function startPreview() {
+            if (driven) return;
+            if (window.location.protocol === "file:") {
+                Standalone.start();
+                return;
             }
-        }, 250);
+            Loader.run(function (key) {
+                if (key) {
+                    var settingsPage = Standalone.getPages().settings;
+                    if (settingsPage && settingsPage[0] && settingsPage[0].type === "keybind") {
+                        settingsPage[0].keyStr = key;
+                    }
+                }
+                Standalone.start();
+            });
+        }
+
+        setTimeout(startPreview, window.location.protocol === "file:" ? 0 : 250);
     });
 
     /* Expose the view so the Lua bridge (or console) can poke it if needed. */
