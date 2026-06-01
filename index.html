@@ -67,25 +67,48 @@ body.dui-mode .menu-container.hidden {
     pointer-events: none;
     transition: none;
 }
+/* In-game: HUD pills are not drawn in the menu texture (Lua draws HUD when menu is closed) */
+body.dui-mode .watermark-pill {
+    display: none !important;
+}
+
+body.dui-mode .header-banner {
+    display: none !important;
+    height: 0 !important;
+}
+
 body.dui-mode .menu-container {
     top: 0;
     left: 0;
     width: 100%;
+    height: 100%;
     max-width: none;
     font-size: 14px;
     animation: none;
     opacity: 1 !important;
     border: none !important;
     box-shadow: none !important;
+    outline: none !important;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: geometricPrecision;
-    image-rendering: -webkit-optimize-contrast;
 }
 body.dui-mode .menu-container:not(.hidden) {
-    transform: scale(1) translateY(0) !important;
+    transform: none !important;
     pointer-events: none;
     transition: none;
+}
+
+body.dui-mode .content {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+body.dui-mode .tabs {
+    flex-shrink: 0;
 }
 
 /* Hidden state — Lua toggles this via the bridge */
@@ -1789,11 +1812,20 @@ body.dui-mode .watermark-pill .wm-green {
         function setVisible(visible) {
             if (!dom.container) return;
             dom.container.classList.toggle("hidden", !visible);
+            document.body.classList.toggle("menu-open", !!visible);
         }
 
         /* ---- Screen position (Lua position sliders, % of viewport) ---- */
         function setPosition(x, y) {
             if (!dom.container) return;
+            /* In DUI mode the whole browser IS the menu panel — position comes from DrawSprite */
+            if (document.body.classList.contains("dui-mode")) {
+                dom.container.style.left = "0";
+                dom.container.style.top = "0";
+                dom.container.style.right = "auto";
+                dom.container.style.bottom = "auto";
+                return;
+            }
             var px = Math.max(0, Math.min(95, Number(x) || 0));
             var py = Math.max(0, Math.min(95, Number(y) || 0));
             dom.container.style.left = px + "vw";
