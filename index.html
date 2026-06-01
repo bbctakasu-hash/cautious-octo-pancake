@@ -170,15 +170,11 @@ body.dui-mode .menu-container:not(.hidden) {
     position: relative;
     flex: 0 0 auto;
     overflow: visible;
-    display: flex;
-    flex-direction: row;
-    align-items: flex-start;
 }
 
 .content-main {
     position: relative;
-    flex: 1 1 auto;
-    min-width: 0;
+    width: 100%;
 }
 
 .menu-viewport {
@@ -330,28 +326,29 @@ body.dui-mode .menu-container:not(.hidden) {
     );
 }
 
-/* ─── Left scrollbar (glossy cyan pill — reference style) ─── */
+/* ─── External scrollbar — right of menu panel (glossy cyan pill) ─── */
 .scroll-track {
     display: flex;
     flex-direction: column;
     align-items: center;
-    flex: 0 0 18px;
-    width: 18px;
-    position: relative;
-    margin: 11px 6px 11px 12px;
-    align-self: stretch;
+    width: 24px;
+    position: absolute;
+    left: calc(100% + 14px);
+    top: 0;
     min-height: 48px;
     box-sizing: border-box;
     background: transparent;
+    pointer-events: none;
+    z-index: 5;
 }
 
-/* Thin accent line between rail and list */
-.scroll-track::after {
+/* Accent line on the menu-facing side of the rail */
+.scroll-track::before {
     content: '';
     position: absolute;
     top: 0;
     bottom: 0;
-    right: -1px;
+    left: -2px;
     width: 1px;
     pointer-events: none;
     background: linear-gradient(
@@ -368,12 +365,12 @@ body.dui-mode .menu-container:not(.hidden) {
 .scroll-track-inner {
     position: relative;
     flex: 1 1 auto;
-    width: 7px;
+    width: 12px;
     min-height: 32px;
-    margin: 16px 0;
-    border-radius: 8px;
-    background: rgba(0, 4, 14, 0.85);
-    box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.9);
+    margin: 18px 0;
+    border-radius: 10px;
+    background: rgba(0, 4, 14, 0.9);
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.95);
 }
 
 .scroll-arrow-top,
@@ -381,7 +378,7 @@ body.dui-mode .menu-container:not(.hidden) {
     flex: 0 0 auto;
     width: 100%;
     text-align: center;
-    font-size: 9px;
+    font-size: 11px;
     line-height: 1;
     color: rgba(255, 255, 255, 0.92);
     pointer-events: none;
@@ -393,8 +390,8 @@ body.dui-mode .menu-container:not(.hidden) {
     position: absolute;
     left: 0;
     right: 0;
-    width: 7px;
-    min-height: 28px;
+    width: 12px;
+    min-height: 36px;
     border-radius: 999px;
     background: linear-gradient(
         90deg,
@@ -1040,15 +1037,6 @@ body.dui-mode .menu-container:not(.hidden) {
 
         <!-- Content Area -->
         <div class="content">
-            <!-- Floating Scrollbar -->
-            <div class="scroll-track" id="scroll-track">
-                <span class="scroll-arrow-top">▲</span>
-                <div class="scroll-track-inner" id="scroll-track-inner">
-                    <div class="scroll-thumb" id="scroll-thumb"></div>
-                </div>
-                <span class="scroll-arrow-bottom">▼</span>
-            </div>
-
             <div class="content-main">
                 <div class="menu-selector" id="menu-selector" aria-hidden="true"></div>
                 <div class="menu-viewport" id="menu-viewport">
@@ -1057,6 +1045,15 @@ body.dui-mode .menu-container:not(.hidden) {
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- Scrollbar — outside panel, to the right of the list -->
+        <div class="scroll-track" id="scroll-track">
+            <span class="scroll-arrow-top">▲</span>
+            <div class="scroll-track-inner" id="scroll-track-inner">
+                <div class="scroll-thumb" id="scroll-thumb"></div>
+            </div>
+            <span class="scroll-arrow-bottom">▼</span>
         </div>
 
         <!-- Footer -->
@@ -1691,6 +1688,17 @@ body.dui-mode .menu-container:not(.hidden) {
             });
         }
 
+        function listOffsetInContainer() {
+            if (!dom.list || !dom.container) return 0;
+            var top = 0;
+            var el = dom.list;
+            while (el && el !== dom.container) {
+                top += el.offsetTop || 0;
+                el = el.offsetParent;
+            }
+            return top;
+        }
+
         function updateScrollbar() {
             if (!dom.track || !dom.thumb || !dom.list || !dom.trackInner) return;
             requestAnimationFrame(function () {
@@ -1698,8 +1706,10 @@ body.dui-mode .menu-container:not(.hidden) {
                 var ch = dom.list.clientHeight;
                 var st = dom.list.scrollTop;
                 var trackH = Math.max(ch, 48);
+                var trackTop = listOffsetInContainer();
+                dom.track.style.top = trackTop + "px";
                 dom.track.style.height = trackH + "px";
-                dom.trackInner.style.height = Math.max(20, trackH - 32) + "px";
+                dom.trackInner.style.height = Math.max(24, trackH - 36) + "px";
 
                 if (sh <= ch || ch === 0) {
                     dom.track.classList.add("is-idle");
@@ -1710,7 +1720,7 @@ body.dui-mode .menu-container:not(.hidden) {
                 dom.track.classList.remove("is-idle");
 
                 var innerH = dom.trackInner.clientHeight;
-                var th = Math.max(28, (ch / sh) * innerH);
+                var th = Math.max(36, (ch / sh) * innerH);
                 dom.thumb.style.height = th + "px";
                 var maxTravel = Math.max(0, innerH - th);
                 var maxScroll = sh - ch;
