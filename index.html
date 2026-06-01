@@ -864,9 +864,9 @@ body.dui-mode .menu-container {
         <div class="content">
             <!-- Floating Scrollbar -->
             <div class="scroll-track" id="scroll-track">
-                <i class="fa-solid fa-chevron-up scroll-arrow-top"></i>
+                <span class="scroll-arrow-top">▲</span>
                 <div class="scroll-thumb" id="scroll-thumb"></div>
-                <i class="fa-solid fa-chevron-down scroll-arrow-bottom"></i>
+                <span class="scroll-arrow-bottom">▼</span>
             </div>
 
             <div class="menu-list" id="menu-list">
@@ -1334,16 +1334,11 @@ body.dui-mode .menu-container {
             if (!dom.toastStack) return;
             opts = opts || {};
             var kind = opts.kind || "info";
-            var icons = {
-                info: "fa-solid fa-circle-info",
-                success: "fa-solid fa-circle-check",
-                error: "fa-solid fa-circle-xmark",
-                warning: "fa-solid fa-triangle-exclamation"
-            };
+            var icons = { info: "ℹ", success: "✓", error: "✕", warning: "!" };
             var el = document.createElement("div");
             el.className = "toast type-" + kind;
             el.innerHTML =
-                '<i class="toast-icon ' + (icons[kind] || icons.info) + '"></i>' +
+                '<span class="toast-icon">' + (icons[kind] || icons.info) + '</span>' +
                 '<div class="toast-body">' +
                 '<span class="toast-title">' + esc(opts.title || "Solaris") + '</span>' +
                 (opts.text ? '<span class="toast-text">' + esc(opts.text) + '</span>' : "") +
