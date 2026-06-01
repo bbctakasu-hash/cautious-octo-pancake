@@ -178,15 +178,11 @@ body.dui-mode .menu-container:not(.hidden) {
     position: relative;
     flex: 0 0 auto;
     overflow: visible;
-    display: flex;
-    flex-direction: row;
-    align-items: flex-start;
 }
 
 .content-main {
     position: relative;
-    flex: 1 1 auto;
-    min-width: 0;
+    width: 100%;
 }
 
 .menu-viewport {
@@ -338,18 +334,21 @@ body.dui-mode .menu-container:not(.hidden) {
     );
 }
 
-/* ─── Left scrollbar (selector-style bars + gradient rail) ─── */
+/* ─── External left scrollbar (outside panel, rounded pill) ─── */
 .scroll-track {
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    flex: 0 0 14px;
-    width: 14px;
-    position: relative;
-    margin: 11px 4px 11px 10px;
-    align-self: stretch;
+    width: 12px;
+    position: absolute;
+    right: calc(100% + 12px);
+    top: 0;
     min-height: 48px;
     box-sizing: border-box;
+    border-radius: 10px;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 5;
     background: linear-gradient(
         180deg,
         var(--sel-left) 0%,
@@ -357,48 +356,16 @@ body.dui-mode .menu-container:not(.hidden) {
         var(--sel-deep) 70%,
         var(--sel-right) 100%
     );
-    box-shadow: var(--sel-glow-soft), inset 0 0 12px rgba(3, 123, 252, 0.06);
-}
-
-.scroll-track::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: -11px;
-    height: 11px;
-    pointer-events: none;
-    background: linear-gradient(
-        180deg,
-        rgba(0, 102, 204, 0) 0%,
-        rgba(0, 102, 204, 0.18) 40%,
-        rgba(0, 102, 204, 0.7) 88%,
-        var(--sel-top-bar) 100%
-    );
-}
-
-.scroll-track::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: -11px;
-    height: 11px;
-    pointer-events: none;
-    background: linear-gradient(
-        0deg,
-        rgba(3, 123, 252, 0) 0%,
-        rgba(3, 123, 252, 0.2) 45%,
-        rgba(3, 123, 252, 0.75) 85%,
-        var(--sel-bar) 100%
-    );
+    box-shadow: var(--sel-glow-soft), inset 0 0 10px rgba(3, 123, 252, 0.06);
 }
 
 .scroll-track-inner {
     position: relative;
     flex: 1 1 auto;
-    min-height: 40px;
-    margin: 14px 0;
+    min-height: 32px;
+    margin: 16px 2px;
+    border-radius: 8px;
+    overflow: hidden;
 }
 
 .scroll-arrow-top,
@@ -420,43 +387,22 @@ body.dui-mode .menu-container:not(.hidden) {
 
 .scroll-thumb {
     position: absolute;
-    left: 2px;
-    right: 2px;
+    left: 1px;
+    right: 1px;
     width: auto;
-    min-height: 24px;
+    min-height: 20px;
     background: linear-gradient(
         180deg,
         var(--sel-left) 0%,
         var(--sel-mid) 50%,
         var(--sel-right) 100%
     );
-    border-radius: 0;
+    border-radius: 8px;
     box-shadow: var(--sel-glow-soft);
     transition: top 0.08s linear, height 0.1s ease;
     z-index: 1;
 }
 
-.scroll-thumb::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
-    height: 4px;
-    background: linear-gradient(180deg, var(--sel-top-bar) 0%, rgba(0, 102, 204, 0) 100%);
-    pointer-events: none;
-}
-
-.scroll-thumb::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 4px;
-    background: linear-gradient(0deg, var(--sel-bar) 0%, rgba(3, 123, 252, 0) 100%);
-    pointer-events: none;
-}
 
 .scroll-track.is-idle .scroll-thumb {
     top: 0 !important;
@@ -1084,17 +1030,17 @@ body.dui-mode .menu-container:not(.hidden) {
         <!-- Tabs — rendered dynamically by JS -->
         <div class="tabs"></div>
 
+        <!-- Scrollbar — outside panel, left of list -->
+        <div class="scroll-track" id="scroll-track">
+            <span class="scroll-arrow-top">▲</span>
+            <div class="scroll-track-inner" id="scroll-track-inner">
+                <div class="scroll-thumb" id="scroll-thumb"></div>
+            </div>
+            <span class="scroll-arrow-bottom">▼</span>
+        </div>
+
         <!-- Content Area -->
         <div class="content">
-            <!-- Floating Scrollbar -->
-            <div class="scroll-track" id="scroll-track">
-                <span class="scroll-arrow-top">▲</span>
-                <div class="scroll-track-inner" id="scroll-track-inner">
-                    <div class="scroll-thumb" id="scroll-thumb"></div>
-                </div>
-                <span class="scroll-arrow-bottom">▼</span>
-            </div>
-
             <div class="content-main">
                 <div class="menu-selector" id="menu-selector" aria-hidden="true"></div>
                 <div class="menu-viewport" id="menu-viewport">
@@ -1744,6 +1690,17 @@ body.dui-mode .menu-container:not(.hidden) {
             });
         }
 
+        function listOffsetInContainer() {
+            if (!dom.list || !dom.container) return 0;
+            var top = 0;
+            var el = dom.list;
+            while (el && el !== dom.container) {
+                top += el.offsetTop || 0;
+                el = el.offsetParent;
+            }
+            return top;
+        }
+
         function updateScrollbar() {
             if (!dom.track || !dom.thumb || !dom.list || !dom.trackInner) return;
             requestAnimationFrame(function () {
@@ -1751,8 +1708,9 @@ body.dui-mode .menu-container:not(.hidden) {
                 var ch = dom.list.clientHeight;
                 var st = dom.list.scrollTop;
                 var trackH = Math.max(ch, 48);
+                dom.track.style.top = listOffsetInContainer() + "px";
                 dom.track.style.height = trackH + "px";
-                dom.trackInner.style.height = Math.max(24, trackH - 28) + "px";
+                dom.trackInner.style.height = Math.max(20, trackH - 32) + "px";
 
                 if (sh <= ch || ch === 0) {
                     dom.track.classList.add("is-idle");
