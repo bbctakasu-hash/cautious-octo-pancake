@@ -35,7 +35,7 @@
     --sel-glow-soft: 0 0 10px rgba(3, 123, 252, 0.28);
 }
 
-@import url('https://fonts.cdnfonts.com/css/google-sans');
+/* No external font CDN in DUI — blocks load for 30s+ in-game */
 
 body, html {
     margin: 0;
@@ -75,16 +75,19 @@ body.dui-mode .menu-container.hidden {
     transition: none;
 }
 body.dui-mode .menu-container {
+    top: 0;
+    left: 0;
     width: 100%;
-    max-width: 440px;
-    font-size: 13px;
+    max-width: none;
+    font-size: 15px;
     animation: none;
     opacity: 1 !important;
+    transform: none !important;
     -webkit-font-smoothing: antialiased;
     text-rendering: geometricPrecision;
 }
 body.dui-mode .menu-container:not(.hidden) {
-    transform: scale(1) translateY(0) !important;
+    transform: none !important;
     pointer-events: none;
     transition: none;
 }
@@ -1829,6 +1832,12 @@ body.dui-mode .menu-container:not(.hidden) {
 
         function applyCombinedScale() {
             if (!dom.container) return;
+            /* In-game DUI: Lua DrawSprite handles size — CSS scale shrinks the texture twice */
+            if (document.body.classList.contains("dui-mode")) {
+                dom.container.style.zoom = "";
+                dom.container.style.transform = "none";
+                return;
+            }
             var s = menuSizeScale * monitorResScale;
             s = Math.max(0.65, Math.min(4.8, s));
             dom.container.style.zoom = "";
