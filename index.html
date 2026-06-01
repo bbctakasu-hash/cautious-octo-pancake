@@ -827,7 +827,7 @@ body.dui-mode .menu-container {
 }
 
 </style>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- No external CDN fonts/icons in DUI — they block page load for 30s+ in-game. -->
 </head>
 <body>
     <!-- Loading / Keybind Overlay -->
@@ -876,7 +876,7 @@ body.dui-mode .menu-container {
 
         <!-- Footer -->
         <div class="footer">
-            <span class="discord"><i class="fa-solid fa-fire" style="margin-right:6px;color:rgb(var(--theme))"></i>discord.gg/solarismenu</span>
+            <span class="discord">discord.gg/solarismenu</span>
             <span class="page-count" id="page-count"></span>
         </div>
     </div>
@@ -1030,7 +1030,7 @@ body.dui-mode .menu-container {
             var right = "";
             switch (item.type) {
                 case "submenu":
-                    right = '<span class="item-arrow"><i class="fa-solid fa-chevron-right"></i></span>';
+                    right = '<span class="item-arrow">›</span>';
                     break;
                 case "toggle":
                     right = '<div class="toggle-switch ' + (item.value ? "on" : "") + '"><div class="toggle-knob"></div></div>';
@@ -1045,23 +1045,23 @@ body.dui-mode .menu-container {
                     break;
                 }
                 case "action":
-                    right = '<span class="item-arrow" style="opacity:0.3"><i class="fa-solid fa-chevron-right"></i></span>';
+                    right = '<span class="item-arrow" style="opacity:0.3">›</span>';
                     break;
                 case "array": {
                     var label = (item.options && item.options[item.value] != null)
                         ? item.options[item.value] : "";
                     right = '<div class="array-container">' +
-                        '<span class="array-arrow left-arrow"><i class="fa-solid fa-chevron-left"></i></span>' +
+                        '<span class="array-arrow left-arrow">‹</span>' +
                         '<span class="array-value">' + esc(label) + '</span>' +
-                        '<span class="array-arrow right-arrow"><i class="fa-solid fa-chevron-right"></i></span>' +
+                        '<span class="array-arrow right-arrow">›</span>' +
                         '</div>';
                     break;
                 }
                 case "value":
                     right = '<div class="array-container">' +
-                        '<span class="array-arrow left-arrow"><i class="fa-solid fa-chevron-left"></i></span>' +
+                        '<span class="array-arrow left-arrow">‹</span>' +
                         '<span class="array-value">' + esc(item.valueStr) + '</span>' +
-                        '<span class="array-arrow right-arrow"><i class="fa-solid fa-chevron-right"></i></span>' +
+                        '<span class="array-arrow right-arrow">›</span>' +
                         '</div>';
                     break;
                 case "color":
@@ -1077,7 +1077,7 @@ body.dui-mode .menu-container {
             }
 
             var iconHtml = item.icon
-                ? '<span class="item-icon"><i class="' + esc(item.icon) + '"></i></span>' : "";
+                ? '<span class="item-icon">▸</span>' : "";
 
             var nameHtml;
             if (item.desc) {
@@ -1116,7 +1116,7 @@ body.dui-mode .menu-container {
                 if (onReady) onReady();
             };
 
-            if (animateDir) {
+            if (animateDir && !document.body.classList.contains("dui-mode")) {
                 transitioning = true;
                 dom.list.classList.add("fade-out");
                 dom.list.style.transform = animateDir === "forward" ? "translateX(-15px)" : "translateX(15px)";
@@ -1140,7 +1140,7 @@ body.dui-mode .menu-container {
                 if (!nodes[i].classList.contains("menu-item")) continue;
                 if (i === index) {
                     nodes[i].classList.add("active");
-                    nodes[i].scrollIntoView({ behavior: "smooth", block: "nearest" });
+                    nodes[i].scrollIntoView({ block: "nearest", behavior: "instant" });
                 } else {
                     nodes[i].classList.remove("active");
                 }
