@@ -23,6 +23,9 @@
     --sel-right: rgb(0, 0, 0);
     --sel-bar: rgb(3, 123, 252);
     --sel-top-bar: rgb(0, 102, 204);
+    /* Panel fill — light alpha so the game shows through (no backdrop-filter in DUI) */
+    --panel-bg: rgba(2, 4, 10, 0.74);
+    --panel-bg-soft: rgba(2, 4, 10, 0.62);
 }
 
 @import url('https://fonts.cdnfonts.com/css/google-sans');
@@ -93,7 +96,7 @@ body.dui-mode .menu-container:not(.hidden) {
     left: 10vw;
     width: 440px;
     border-radius: 8px;
-    background: #02040A;
+    background: var(--panel-bg);
     border: none;
     box-shadow: none;
     outline: none;
@@ -116,7 +119,7 @@ body.dui-mode .menu-container:not(.hidden) {
 .header-banner {
     width: 100%;
     height: 110px;
-    background-color: #02040A;
+    background-color: var(--panel-bg-soft);
     background-image: url('https://placehold.co/400x110/02040A/64748b?text=Banner+Image+Placeholder');
     background-size: cover;
     background-position: center;
@@ -129,7 +132,7 @@ body.dui-mode .menu-container:not(.hidden) {
 .tabs {
     display: flex;
     padding: 0;
-    background: #02040A;
+    background: var(--panel-bg);
     position: relative;
     z-index: 6;
 }
@@ -143,7 +146,7 @@ body.dui-mode .menu-container:not(.hidden) {
     color: #94a3b8;
     cursor: pointer;
     text-transform: capitalize;
-    background: #000000;
+    background: rgba(0, 0, 0, 0.35);
     transition: color 0.15s ease, background 0.15s ease;
     position: relative;
     z-index: 1;
@@ -151,7 +154,7 @@ body.dui-mode .menu-container:not(.hidden) {
 
 .tab:hover {
     color: #ffffff;
-    background: #0a1020;
+    background: rgba(10, 16, 32, 0.55);
 }
 
 .tab.active {
@@ -170,11 +173,15 @@ body.dui-mode .menu-container:not(.hidden) {
     position: relative;
     flex: 0 0 auto;
     overflow: visible;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
 }
 
 .content-main {
     position: relative;
-    width: 100%;
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
 .menu-viewport {
@@ -291,14 +298,14 @@ body.dui-mode .menu-container:not(.hidden) {
     box-shadow: inset 0 0 18px rgba(3, 123, 252, 0.06);
 }
 
-/* Top/bottom accent lines — kept inside the row so the bar does not sit between items */
+/* Thin washed bars sit OUTSIDE the row (original layout) */
 .menu-selector::before {
     content: '';
     position: absolute;
     left: 0;
     right: 0;
-    top: 0;
-    height: 3px;
+    top: -11px;
+    height: 11px;
     pointer-events: none;
     background: linear-gradient(
         180deg,
@@ -314,8 +321,8 @@ body.dui-mode .menu-container:not(.hidden) {
     position: absolute;
     left: 0;
     right: 0;
-    bottom: 0;
-    height: 3px;
+    bottom: -11px;
+    height: 11px;
     pointer-events: none;
     background: linear-gradient(
         0deg,
@@ -326,95 +333,130 @@ body.dui-mode .menu-container:not(.hidden) {
     );
 }
 
-/* ─── External scrollbar — right of menu panel (glossy cyan pill) ─── */
+/* ─── Left scrollbar (selector-style bars + gradient rail) ─── */
 .scroll-track {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    width: 24px;
-    position: absolute;
-    left: auto;
-    right: calc(100% + 14px);
-    top: 0;
+    align-items: stretch;
+    flex: 0 0 14px;
+    width: 14px;
+    position: relative;
+    margin: 11px 4px 11px 10px;
+    align-self: stretch;
     min-height: 48px;
     box-sizing: border-box;
-    background: transparent;
-    pointer-events: none;
-    z-index: 5;
+    background: linear-gradient(
+        180deg,
+        var(--sel-left) 0%,
+        rgb(2, 12, 44) 45%,
+        rgb(1, 6, 20) 70%,
+        var(--sel-right) 100%
+    );
+    box-shadow: inset 0 0 12px rgba(3, 123, 252, 0.05);
 }
 
-/* Accent line on the menu-facing side of the rail (right edge when rail is left of menu) */
 .scroll-track::before {
     content: '';
     position: absolute;
-    top: 0;
-    bottom: 0;
-    left: auto;
-    right: -2px;
-    width: 1px;
+    left: 0;
+    right: 0;
+    top: -11px;
+    height: 11px;
     pointer-events: none;
     background: linear-gradient(
         180deg,
-        rgba(3, 123, 252, 0) 0%,
-        rgba(3, 123, 252, 0.55) 18%,
-        rgba(80, 180, 255, 0.85) 50%,
-        rgba(3, 123, 252, 0.55) 82%,
-        rgba(3, 123, 252, 0) 100%
+        rgba(0, 102, 204, 0) 0%,
+        rgba(0, 102, 204, 0.18) 40%,
+        rgba(0, 102, 204, 0.7) 88%,
+        var(--sel-top-bar) 100%
     );
-    box-shadow: 0 0 6px rgba(60, 160, 255, 0.35);
+}
+
+.scroll-track::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -11px;
+    height: 11px;
+    pointer-events: none;
+    background: linear-gradient(
+        0deg,
+        rgba(3, 123, 252, 0) 0%,
+        rgba(3, 123, 252, 0.2) 45%,
+        rgba(3, 123, 252, 0.75) 85%,
+        var(--sel-bar) 100%
+    );
 }
 
 .scroll-track-inner {
     position: relative;
     flex: 1 1 auto;
-    width: 12px;
-    min-height: 32px;
-    margin: 18px 0;
-    border-radius: 10px;
-    background: rgba(0, 4, 14, 0.9);
-    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.95);
+    min-height: 40px;
+    margin: 14px 0;
 }
 
 .scroll-arrow-top,
 .scroll-arrow-bottom {
-    flex: 0 0 auto;
-    width: 100%;
-    text-align: center;
-    font-size: 11px;
-    line-height: 1;
-    color: rgba(255, 255, 255, 0.92);
-    pointer-events: none;
-    z-index: 2;
-    text-shadow: 0 0 6px rgba(80, 180, 255, 0.8);
-}
-
-.scroll-thumb {
     position: absolute;
     left: 0;
     right: 0;
-    width: 12px;
-    min-height: 36px;
-    border-radius: 999px;
+    width: auto;
+    text-align: center;
+    font-size: 8px;
+    line-height: 1;
+    color: rgba(3, 123, 252, 0.85);
+    pointer-events: none;
+    z-index: 2;
+}
+
+.scroll-arrow-top { top: 2px; }
+.scroll-arrow-bottom { bottom: 2px; }
+
+.scroll-thumb {
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    width: auto;
+    min-height: 24px;
     background: linear-gradient(
-        90deg,
-        rgb(6, 28, 82) 0%,
-        rgb(12, 72, 160) 22%,
-        rgb(72, 175, 255) 50%,
-        rgb(12, 72, 160) 78%,
-        rgb(6, 28, 82) 100%
+        180deg,
+        var(--sel-left) 0%,
+        rgb(2, 12, 44) 50%,
+        var(--sel-right) 100%
     );
-    box-shadow:
-        0 0 10px rgba(55, 165, 255, 0.65),
-        0 0 4px rgba(120, 200, 255, 0.45),
-        inset 0 0 3px rgba(255, 255, 255, 0.35);
+    border-radius: 0;
+    box-shadow: none;
     transition: top 0.08s linear, height 0.1s ease;
     z-index: 1;
+}
+
+.scroll-thumb::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 4px;
+    background: linear-gradient(180deg, var(--sel-top-bar) 0%, rgba(0, 102, 204, 0) 100%);
+    pointer-events: none;
+}
+
+.scroll-thumb::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 4px;
+    background: linear-gradient(0deg, var(--sel-bar) 0%, rgba(3, 123, 252, 0) 100%);
+    pointer-events: none;
 }
 
 .scroll-track.is-idle .scroll-thumb {
     top: 0 !important;
     height: 100% !important;
-    opacity: 0.45;
+    opacity: 0.35;
 }
 
 .menu-list {
@@ -574,7 +616,7 @@ body.dui-mode .menu-container:not(.hidden) {
     justify-content: space-between;
     align-items: center;
     padding: 14px 16px;
-    background: #02040A;
+    background: var(--panel-bg);
     border-top: 1px solid rgba(255,255,255,0.05);
     font-size: 12px;
     color: var(--text-muted);
@@ -1039,6 +1081,15 @@ body.dui-mode .menu-container:not(.hidden) {
 
         <!-- Content Area -->
         <div class="content">
+            <!-- Floating Scrollbar -->
+            <div class="scroll-track" id="scroll-track">
+                <span class="scroll-arrow-top">▲</span>
+                <div class="scroll-track-inner" id="scroll-track-inner">
+                    <div class="scroll-thumb" id="scroll-thumb"></div>
+                </div>
+                <span class="scroll-arrow-bottom">▼</span>
+            </div>
+
             <div class="content-main">
                 <div class="menu-selector" id="menu-selector" aria-hidden="true"></div>
                 <div class="menu-viewport" id="menu-viewport">
@@ -1047,15 +1098,6 @@ body.dui-mode .menu-container:not(.hidden) {
                     </div>
                 </div>
             </div>
-        </div>
-
-        <!-- Scrollbar — outside panel, to the right of the list -->
-        <div class="scroll-track" id="scroll-track">
-            <span class="scroll-arrow-top">▲</span>
-            <div class="scroll-track-inner" id="scroll-track-inner">
-                <div class="scroll-thumb" id="scroll-thumb"></div>
-            </div>
-            <span class="scroll-arrow-bottom">▼</span>
         </div>
 
         <!-- Footer -->
@@ -1227,9 +1269,9 @@ body.dui-mode .menu-container:not(.hidden) {
             else if (cls.indexOf("fa-gear") > -1) { vb = "0 0 512 512"; p = "M495.9 166.6c3.2 8.7 .5 18.4-6.4 24.6l-43.3 39.4c1.1 8.3 1.7 16.8 1.7 25.4s-.6 17.1-1.7 25.4l43.3 39.4c6.9 6.2 9.6 15.9 6.4 24.6c-4.4 11.9-9.7 23.3-15.8 34.3l-4.7 8.1c-6.6 11-14 21.4-22.1 31.2c-5.9 7.2-15.7 9.6-24.5 6.8l-55.7-17.7c-13.4 10.3-28.2 18.9-44 25.4l-12.5 57.1c-2 9.1-9 16.3-18.2 17.8c-13.8 2.3-28 3.5-42.5 3.5s-28.7-1.2-42.5-3.5c-9.2-1.5-16.2-8.7-18.2-17.8l-12.5-57.1c-15.8-6.5-30.6-15.1-44-25.4L83.1 425.9c-8.8 2.8-18.6 .3-24.5-6.8c-8.1-9.8-15.5-20.2-22.1-31.2l-4.7-8.1c-6.1-11-11.4-22.4-15.8-34.3c-3.2-8.7-.5-18.4 6.4-24.6l43.3-39.4C64.6 273.1 64 264.6 64 256s.6-17.1 1.7-25.4L22.4 191.2c-6.9-6.2-9.6-15.9-6.4-24.6c4.4-11.9 9.7-23.3 15.8-34.3l4.7-8.1c6.6-11 14-21.4 22.1-31.2c5.9-7.2 15.7-9.6 24.5-6.8l55.7 17.7c13.4-10.3 28.2-18.9 44-25.4l12.5-57.1c2-9.1 9-16.3 18.2-17.8C227.3 1.2 241.5 0 256 0s28.7 1.2 42.5 3.5c9.2 1.5 16.2 8.7 18.2 17.8l12.5 57.1c15.8 6.5 30.6 15.1 44 25.4l55.7-17.7c8.8-2.8 18.6-.3 24.5 6.8c8.1 9.8 15.5 20.2 22.1 31.2l4.7 8.1c6.1 11 11.4 22.4 15.8 34.3zM256 336a80 80 0 1 0 0-160 80 80 0 1 0 0 160z"; }
             else if (cls.indexOf("fa-shield") > -1) { vb = "0 0 512 512"; p = "M256 0c-4.1 0-8.1 1.4-11.3 4.1L32 188.7c-18.4 15.6-32 37.8-32 63.3V384c0 47.9 28 92.1 72.4 112l161.4 72.8c7.4 3.4 16 3.4 23.4 0l161.4-72.8c44.4-20 72.4-64.1 72.4-112V252c0-25.5-13.6-47.7-32-63.3L267.3 4.1C264.1 1.4 260.1 0 256 0zm0 464V48L464 220v164L256 464z"; }
             else if (cls.indexOf("fa-users") > -1) { vb = "0 0 640 512"; p = "M144 0a80 80 0 1 1 0 160 80 80 0 1 1 0-160zM512 0a80 80 0 1 1 0 160 80 80 0 1 1 0-160zM0 512c0-70.7 57.3-128 128-128h64c70.7 0 128 57.3 128 128H0zM384 384c70.7 0 128 57.3 128 128H384c0-70.7 57.3-128 128-128h64z"; }
-            else if (cls.indexOf("fa-person") > -1 && cls.indexOf("fa-person-running") === -1) { vb = "0 0 448 512"; p = "M320 48a48 48 0 1 0 -96 0 48 48 0 1 0 96 0zM125.7 175.5c9.9-9.9 23.4-15.5 37.5-15.5c1.9 0 3.8 .1 5.6 .3L137.6 96c-4.3-17 4.1-34.9 20.3-40.8s33.8 1.4 41.5 17.5l56 116.6c7.4 15.4 6 33.6-3.8 47.8l-45.1 65.2 25.1 50.2 67.2-33.6c15.8-7.9 34.8-1.5 42.7 14.3s1.5 34.8-14.3 42.7l-96 48c-9.1 4.5-19.8 4-28.5-1.4L136 328l-40.4 40.4c-11.4 11.4-29.4 12.8-42.4 3.1s-14.4-28.4-3.1-41.4l51.1-51.1-37-74-45 15c-16.7 5.6-34.9-3.4-40.5-20.1s3.4-34.9 20.1-40.5l72-24c13.4-4.5 28.3-.9 38.2 9l34.8 34.8-21.1-30.5c-4.2-6.1-4.7-14.1-1.3-20.7l22.3-43.2z"; }
             else if (cls.indexOf("fa-earth") > -1) { vb = "0 0 512 512"; p = "M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM177.7 321.1c-11.8-35.6 7.5-73.9 42.2-85.7l87.7-29.1c15.2-5.1 31.7-1.5 43.5 9.4l49.4 45.4c12.2 11.2 15.8 28.8 9 43.9l-25.8 57.4c-8.6 19.1-28.3 30.3-49.1 27.6l-67.2-9.1c-22.3-3-39.8-20.5-42.7-42.7zM256 96c-53 0-96 43-96 96h192c0-53-43-96-96-96z"; }
             else if (cls.indexOf("fa-toolbox") > -1) { vb = "0 0 512 512"; p = "M176 88V56c0-13.3 10.7-24 24-24h112c13.3 0 24 10.7 24 24v32h56c35.3 0 64 28.7 64 64v336c0 35.3-28.7 64-64 64H120c-35.3 0-64-28.7-64-64V152c0-35.3 28.7-64 64-64h56zM200 56v32h112V56H200zm-88 96c-17.7 0-32 14.3-32 32v56h352v-56c0-17.7-14.3-32-32-32H112zm352 112H80v200c0 17.7 14.3 32 32 32h288c17.7 0 32-14.3 32-32V264z"; }
+            else if (cls.indexOf("fa-person") > -1 && cls.indexOf("fa-person-running") === -1) { vb = "0 0 448 512"; p = "M320 48a48 48 0 1 0 -96 0 48 48 0 1 0 96 0zM125.7 175.5c9.9-9.9 23.4-15.5 37.5-15.5c1.9 0 3.8 .1 5.6 .3L137.6 96c-4.3-17 4.1-34.9 20.3-40.8s33.8 1.4 41.5 17.5l56 116.6c7.4 15.4 6 33.6-3.8 47.8l-45.1 65.2 25.1 50.2 67.2-33.6c15.8-7.9 34.8-1.5 42.7 14.3s1.5 34.8-14.3 42.7l-96 48c-9.1 4.5-19.8 4-28.5-1.4L136 328l-40.4 40.4c-11.4 11.4-29.4 12.8-42.4 3.1s-14.4-28.4-3.1-41.4l51.1-51.1-37-74-45 15c-16.7 5.6-34.9-3.4-40.5-20.1s3.4-34.9 20.1-40.5l72-24c13.4-4.5 28.3-.9 38.2 9l34.8 34.8-21.1-30.5c-4.2-6.1-4.7-14.1-1.3-20.7l22.3-43.2z"; }
             else if (cls.indexOf("fa-gauge") > -1) { vb = "0 0 512 512"; p = "M0 256a256 256 0 1 1 512 0A256 256 0 1 1 0 256zm320 96c0-26.9-16.5-49.9-40-59.3V88c0-13.3-10.7-24-24-24s-24 10.7-24 24v204.7c-23.5 9.5-40 32.5-40 59.3c0 35.3 28.7 64 64 64s64-28.7 64-64zM144 176a32 32 0 1 0 0-64 32 32 0 1 0 0 64zm-16 80a32 32 0 1 0 -64 0 32 32 0 1 0 64 0zm256-80a32 32 0 1 0 0-64 32 32 0 1 0 0 64zm16 80a32 32 0 1 0 -64 0 32 32 0 1 0 64 0z"; }
             else if (cls.indexOf("fa-kit-medical") > -1 || cls.indexOf("fa-briefcase") > -1) { vb = "0 0 512 512"; p = "M144 112V64c0-35.3 28.7-64 64-64h96c35.3 0 64 28.7 64 64v48h80c35.3 0 64 28.7 64 64v256c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V176c0-35.3 28.7-64 64-64h80zM208 64v48h96V64H208zM192 256v64H128c-17.7 0-32 14.3-32 32s14.3 32 32 32h64v64c0 17.7 14.3 32 32 32s32-14.3 32-32v-64h64c17.7 0 32-14.3 32-32s-14.3-32-32-32h-64v-64c0-17.7-14.3-32-32-32s-32 14.3-32 32z"; }
             else if (cls.indexOf("fa-video") > -1) { vb = "0 0 576 512"; p = "M0 128C0 92.7 28.7 64 64 64H320c35.3 0 64 28.7 64 64V384c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V128zM559.1 99.8c10.4 5.6 16.9 16.4 16.9 28.2V384c0 11.8-6.5 22.6-16.9 28.2s-23 5-32.9-1.6l-96-64L416 337.1V320 192 174.9l14.2-9.5 96-64c9.8-6.5 22.4-7.2 32.9-1.6z"; }
@@ -1696,17 +1738,6 @@ body.dui-mode .menu-container:not(.hidden) {
             });
         }
 
-        function listOffsetInContainer() {
-            if (!dom.list || !dom.container) return 0;
-            var top = 0;
-            var el = dom.list;
-            while (el && el !== dom.container) {
-                top += el.offsetTop || 0;
-                el = el.offsetParent;
-            }
-            return top;
-        }
-
         function updateScrollbar() {
             if (!dom.track || !dom.thumb || !dom.list || !dom.trackInner) return;
             requestAnimationFrame(function () {
@@ -1714,10 +1745,8 @@ body.dui-mode .menu-container:not(.hidden) {
                 var ch = dom.list.clientHeight;
                 var st = dom.list.scrollTop;
                 var trackH = Math.max(ch, 48);
-                var trackTop = listOffsetInContainer();
-                dom.track.style.top = trackTop + "px";
                 dom.track.style.height = trackH + "px";
-                dom.trackInner.style.height = Math.max(24, trackH - 36) + "px";
+                dom.trackInner.style.height = Math.max(24, trackH - 28) + "px";
 
                 if (sh <= ch || ch === 0) {
                     dom.track.classList.add("is-idle");
@@ -1728,7 +1757,7 @@ body.dui-mode .menu-container:not(.hidden) {
                 dom.track.classList.remove("is-idle");
 
                 var innerH = dom.trackInner.clientHeight;
-                var th = Math.max(36, (ch / sh) * innerH);
+                var th = Math.max(24, (ch / sh) * innerH);
                 dom.thumb.style.height = th + "px";
                 var maxTravel = Math.max(0, innerH - th);
                 var maxScroll = sh - ch;
