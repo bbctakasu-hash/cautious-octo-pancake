@@ -80,10 +80,11 @@ body.dui-mode .menu-container {
         rgba(24, 18, 32, 0.90) 0%,
         rgba(12, 9, 16, 0.92) 100%
     );
-    border: 1px solid rgba(var(--theme), 0.22);
+    /* Clean neutral edge — no theme-coloured neon outline/glow. */
+    border: 1px solid rgba(255, 255, 255, 0.07);
     box-shadow:
-        inset 0 1px 0 rgba(255,255,255,0.06),
-        0 0 50px -12px rgba(var(--theme), 0.28);
+        inset 0 1px 0 rgba(255,255,255,0.05),
+        0 20px 55px -18px rgba(0,0,0,0.75);
     overflow: hidden;
     color: var(--text-primary);
     display: flex;
@@ -179,10 +180,10 @@ body.dui-mode .menu-container {
     position: relative;
 }
 
-/* ─── Custom Scrollbar ─── */
+/* ─── Custom Scrollbar (neon) ─── */
 .scroll-track {
     position: absolute;
-    left: -10px;
+    left: 3px;
     width: 8px;
     z-index: 10;
     /* top and height set by JS */
@@ -300,11 +301,14 @@ body.dui-mode .menu-container {
 
 /* ─── Active / Selected ─── */
 .menu-item.active {
-    background: linear-gradient(100deg, rgba(var(--theme), 0.22) 0%, rgba(var(--theme), 0.06) 100%);
+    background: linear-gradient(100deg, rgba(var(--theme), 0.26) 0%, rgba(var(--theme), 0.07) 100%);
+    /* Thin, slightly brighter outline (outline = no layout shift). */
+    outline: 1px solid rgba(var(--theme), 0.6);
+    outline-offset: -1px;
     box-shadow:
-        0 4px 25px rgba(0,0,0,0.5),
-        0 0 40px -5px rgba(var(--theme), 0.3),
-        inset 0 0 30px rgba(var(--theme), 0.1);
+        0 4px 22px rgba(0,0,0,0.5),
+        0 0 26px -2px rgba(var(--theme), 0.55),
+        inset 0 0 34px rgba(var(--theme), 0.16);
 }
 
 .menu-item.active::after {
@@ -1301,6 +1305,17 @@ body.dui-mode .menu-container {
             dom.container.style.bottom = "auto";
         }
 
+        /* ---- Menu scale (Lua size selector). Uses CSS zoom: in CEF/Chromium
+               it scales the whole panel without clashing with the transform-based
+               open/close animation. ---- */
+        function setScale(scale) {
+            if (!dom.container) return;
+            var s = Number(scale);
+            if (!s || s <= 0) s = 1;
+            s = Math.max(0.6, Math.min(1.6, s));
+            dom.container.style.zoom = s;
+        }
+
         /* ---- Toast notifications ---- */
         function notify(opts) {
             if (!dom.toastStack) return;
@@ -1337,7 +1352,7 @@ body.dui-mode .menu-container {
             render: render, setActive: setActive, updateItem: updateItem,
             pressFeedback: pressFeedback, flashArrow: flashArrow,
             renderTabs: renderTabs, setHeader: setHeader, setVisible: setVisible,
-            setPosition: setPosition,
+            setPosition: setPosition, setScale: setScale,
             notify: notify, updateScrollbar: updateScrollbar,
             isTransitioning: isTransitioning, items: items, getActive: getActive
         };
@@ -1389,6 +1404,9 @@ body.dui-mode .menu-container {
                 break;
             case "solaris:setPosition":
                 View.setPosition(msg.x, msg.y);
+                break;
+            case "solaris:setScale":
+                View.setScale(msg.scale);
                 break;
             case "solaris:notify":
                 View.notify(msg);
