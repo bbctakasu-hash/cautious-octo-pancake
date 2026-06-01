@@ -1385,6 +1385,7 @@ body.dui-mode .menu-container:not(.hidden) {
         switch (msg.type) {
             case "solaris:ping":
                 if (dom.biSub) dom.biSub.textContent = "Lua connected";
+                if (dom.pageCount) dom.pageCount.textContent = "↑↓ · Enter · ←";
                 break;
             case "solaris:init":
                 document.documentElement.classList.add("dui-mode");
@@ -1774,7 +1775,8 @@ body.dui-mode .menu-container:not(.hidden) {
             );
             View.render(defaultMain, 0, null);
             View.setVisible(false);
-            if (dom.biSub) dom.biSub.textContent = "↑↓ Enter ←  |  mouse: use keyboard";
+            if (dom.biSub) dom.biSub.textContent = "Waiting for Lua…";
+            if (dom.pageCount) dom.pageCount.textContent = "↑↓ · Enter · ←";
             return;
         }
 
