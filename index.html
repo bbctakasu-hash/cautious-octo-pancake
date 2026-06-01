@@ -1143,7 +1143,8 @@ body.dui-mode .menu-container:not(.hidden) {
             var nodes = dom.list.children;
             for (var i = 0; i < nodes.length; i++) {
                 if (!nodes[i].classList.contains("menu-item")) continue;
-                if (i === index) {
+                var idx = parseInt(nodes[i].getAttribute("data-index"), 10);
+                if (idx === index) {
                     nodes[i].classList.add("active");
                     nodes[i].scrollIntoView({ block: "nearest", behavior: "instant" });
                 } else {
@@ -1387,7 +1388,11 @@ body.dui-mode .menu-container:not(.hidden) {
                 document.body.classList.add("dui-mode");
                 if (msg.theme) Theme.set(msg.theme[0], msg.theme[1], msg.theme[2]);
                 if (dom.biName && msg.brand) dom.biName.textContent = msg.brand;
-                if (dom.biSub && msg.discord) dom.biSub.textContent = msg.discord;
+                if (dom.biSub) {
+                    dom.biSub.textContent = msg.version
+                        ? ("v" + msg.version + " — connected")
+                        : "connected";
+                }
                 break;
             case "solaris:setVisible":
                 View.setVisible(!!msg.visible);
@@ -1468,14 +1473,33 @@ body.dui-mode .menu-container:not(.hidden) {
         return data;
     }
 
+    function unwrapMessage(raw) {
+        var msg = parseDuiPayload(raw);
+        if (msg) return msg;
+        if (raw && typeof raw === "object") {
+            msg = parseDuiPayload(raw.data);
+            if (msg) return msg;
+            msg = parseDuiPayload(raw.message);
+            if (msg) return msg;
+            msg = parseDuiPayload(raw.payload);
+            if (msg) return msg;
+        }
+        return null;
+    }
+
     window.addEventListener("message", function (event) {
-        var msg = parseDuiPayload(event.data);
+        var msg = unwrapMessage(event.data);
         if (msg && msg.type === "solaris:setPage" && msg.items && msg.items.length) {
             driven = true;
             document.body.classList.remove("standalone");
         }
         handleMessage(msg);
     });
+
+    /* Direct bridge — Lua ExecuteJS / some executors call this instead of postMessage */
+    window.handleDuiMessage = function (raw) {
+        handleMessage(unwrapMessage(raw));
+    };
 
 
     /* ============================================================================
@@ -1753,7 +1777,7 @@ body.dui-mode .menu-container:not(.hidden) {
     });
 
     /* Expose the view so the Lua bridge (or console) can poke it if needed. */
-    window.Solaris = { handleMessage: handleMessage, View: View, Theme: Theme };
+    window.Solaris = { handleMessage: handleMessage, handleDuiMessage: window.handleDuiMessage, View: View, Theme: Theme };
 })();
 
 </script>
