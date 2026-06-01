@@ -8,7 +8,7 @@
 /* System fonts in-game (no Google Fonts CDN = faster load, sharper DUI text). */
 
 :root {
-    --theme: 181, 0, 0;
+    --theme: 130, 100, 220;
     --bg: 8, 6, 10;
     --surface: 14, 10, 16;
     --text-primary: #fff;
@@ -60,8 +60,10 @@ body.dui-mode .menu-container.hidden {
     pointer-events: none;
 }
 body.dui-mode .menu-container {
-    top: 5vh;
-    left: 2vw;
+    top: 0;
+    left: 0;
+    width: 100%;
+    max-width: 480px;
     animation: none;
     opacity: 1 !important;
     -webkit-font-smoothing: antialiased;
@@ -118,13 +120,9 @@ body.dui-mode .menu-container:not(.hidden) {
 /* ───────── Banner ───────── */
 .header-banner {
     width: 100%;
-    aspect-ratio: 1024 / 361;
-    background:
-        radial-gradient(130% 150% at 0% 0%, rgba(var(--theme), 0.50) 0%, transparent 55%),
-        radial-gradient(130% 150% at 100% 0%, rgba(var(--theme), 0.20) 0%, transparent 52%),
-        linear-gradient(135deg, rgba(var(--theme), 0.22) 0%, rgba(var(--bg), 0.30) 75%);
-    background-size: cover;
-    background-position: center;
+    height: 72px;
+    min-height: 72px;
+    background: linear-gradient(135deg, rgba(var(--theme), 0.18) 0%, rgba(var(--bg), 0.45) 100%);
     position: relative;
     border-radius: var(--radius) var(--radius) 0 0;
     overflow: hidden;
@@ -856,7 +854,7 @@ body.dui-mode .menu-container:not(.hidden) {
                 <img class="bi-avatar" id="bi-avatar" src="https://cdn.discordapp.com/embed/avatars/0.png" alt="">
                 <div class="bi-text">
                     <span class="bi-name" id="bi-name">Solaris</span>
-                    <span class="bi-sub" id="bi-sub">not connected</span>
+                    <span class="bi-sub" id="bi-sub">loading…</span>
                 </div>
             </div>
             <div class="banner-brand">Solaris</div>
@@ -1775,7 +1773,6 @@ body.dui-mode .menu-container:not(.hidden) {
             );
             View.render(defaultMain, 0, null);
             View.setVisible(false);
-            if (dom.biSub) dom.biSub.textContent = "Waiting for Lua…";
             if (dom.pageCount) dom.pageCount.textContent = "↑↓ · Enter · ←";
             return;
         }
