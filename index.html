@@ -63,8 +63,13 @@ body.dui-mode .menu-container {
     top: 5vh;
     left: 2vw;
     animation: none;
+    opacity: 1 !important;
     -webkit-font-smoothing: antialiased;
     text-rendering: geometricPrecision;
+}
+body.dui-mode .menu-container:not(.hidden) {
+    transform: scale(1) translateY(0) !important;
+    pointer-events: none;
 }
 
 /* Hidden state — Lua toggles this via the bridge */
@@ -1378,6 +1383,8 @@ body.dui-mode .menu-container {
 
         switch (msg.type) {
             case "solaris:init":
+                document.documentElement.classList.add("dui-mode");
+                document.body.classList.add("dui-mode");
                 if (msg.theme) Theme.set(msg.theme[0], msg.theme[1], msg.theme[2]);
                 if (dom.biName && msg.brand) dom.biName.textContent = msg.brand;
                 if (dom.biSub && msg.discord) dom.biSub.textContent = msg.discord;
@@ -1394,6 +1401,7 @@ body.dui-mode .menu-container {
                 });
                 break;
             case "solaris:setPage":
+                View.setVisible(true);
                 View.render(msg.items || [], msg.activeIndex != null ? msg.activeIndex : 0, msg.animateDir || null);
                 break;
             case "solaris:setActive":
