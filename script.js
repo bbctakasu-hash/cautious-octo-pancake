@@ -596,12 +596,9 @@ function readUiVar(name, fallback) {
 
 function applyDisplayScale(menuScale, monitorScale) {
     const menu = Math.max(0.85, Math.min(1.35, Number(menuScale) || 1));
-    const mon = Math.max(0.85, Math.min(4.8, Number(monitorScale) || 1));
     document.documentElement.style.setProperty("--menu-scale", String(menu));
-    document.documentElement.style.setProperty("--monitor-scale", String(mon));
-    /* DUI bitmap is fixed size; only subtle UI zoom — screen size is Lua DrawSprite */
-    const zoom = Math.max(0.92, Math.min(1.08, menu));
-    document.documentElement.style.setProperty("--ui-zoom", String(zoom));
+    document.documentElement.style.setProperty("--monitor-scale", "1");
+    document.documentElement.style.setProperty("--ui-zoom", "1");
 }
 
 function handleSolarisMessage(data) {
