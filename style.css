@@ -267,6 +267,10 @@ body::before {
     margin-bottom: 25px;
 }
 
+.category-section[data-category="player"] .tile:first-child {
+    grid-row: span 2;
+}
+
 .category-header {
     grid-column: span 2;
     display: flex;
@@ -580,8 +584,8 @@ html.dui-mode {
 body.dui-mode {
     width: 100%;
     height: 100%;
-    align-items: stretch;
-    justify-content: stretch;
+    align-items: center;
+    justify-content: center;
 }
 
 body.dui-mode .menu-wrapper {
@@ -591,9 +595,8 @@ body.dui-mode .menu-wrapper {
     max-height: none;
     min-width: 0;
     min-height: 0;
-    border-radius: clamp(4px, 0.6vmin, 10px);
-    zoom: var(--ui-zoom);
-    transform-origin: top left;
+    border-radius: var(--radius);
+    box-shadow: 0 60px 120px -30px rgba(0, 0, 0, 1), 0 0 60px rgba(0, 0, 0, 0.6);
 }
 
 body.dui-mode .sidebar {
@@ -636,8 +639,13 @@ body.dui-mode .content-grid {
 }
 
 body.dui-mode .category-section {
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: clamp(10px, 1.6vmin, 15px);
+}
+
+/* Player tab: General tall left, Powers + Movement stacked right */
+body.dui-mode .category-section[data-category="player"] .tile:first-child {
+    grid-row: span 2;
 }
 
 body.dui-mode .function-item {

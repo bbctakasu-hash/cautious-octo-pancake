@@ -122,6 +122,30 @@ let currentCategory = 'player';
 let searchQuery = '';
 let isAutoScrolling = false;
 
+const NAV_TO_SECTION = {
+    player: 'player',
+    vehicles: 'vehicle',
+    vehicle: 'vehicle',
+    weapons: 'weapons',
+    online: 'radar',
+    utils: 'visuals',
+    server: 'exploits',
+    exploits: 'exploits',
+    configs: 'settings',
+    settings: 'settings',
+};
+
+function sectionIdForNav(navId) {
+    return NAV_TO_SECTION[navId] || navId;
+}
+
+function navIdForSection(sectionId) {
+    for (const [nav, sec] of Object.entries(NAV_TO_SECTION)) {
+        if (sec === sectionId) return nav;
+    }
+    return sectionId;
+}
+
 // DOM Elements
 const tileGrid = document.getElementById('tile-grid');
 const searchInput = document.getElementById('function-search');
@@ -136,9 +160,15 @@ function init() {
 /* ---- Render ALL categories ---- */
 function renderAll() {
     tileGrid.innerHTML = '';
-    
-    Object.keys(menuData).forEach(catId => {
+
+    const sectionId = sectionIdForNav(currentCategory);
+    const catIds = searchQuery
+        ? Object.keys(menuData)
+        : (menuData[sectionId] ? [sectionId] : [currentCategory]);
+
+    catIds.forEach(catId => {
         const categoryData = menuData[catId];
+        if (!categoryData) return;
         
         const section = document.createElement('div');
         section.className = 'category-section';
@@ -147,7 +177,8 @@ function renderAll() {
 
         const header = document.createElement('div');
         header.className = 'category-header';
-        header.innerHTML = `<span>${catId.replace('_', ' ')}</span>`;
+        const label = catId === 'vehicle' ? 'vehicles' : catId;
+        header.innerHTML = `<span>${label.replace(/_/g, ' ')}</span>`;
         section.appendChild(header);
 
         let itemsRendered = 0;
@@ -340,12 +371,13 @@ function setupObservers() {
     });
 }
 
-function updateActiveNav(catId) {
-    if (catId === currentCategory) return;
-    
-    currentCategory = catId;
+function updateActiveNav(sectionId) {
+    const navId = navIdForSection(sectionId);
+    if (navId === currentCategory) return;
+
+    currentCategory = navId;
     document.querySelectorAll('.nav-item').forEach(item => {
-        item.classList.toggle('active', item.getAttribute('data-category') === catId);
+        item.classList.toggle('active', item.getAttribute('data-category') === navId);
     });
 }
 
@@ -353,15 +385,14 @@ function setupEvents() {
     document.querySelectorAll('.nav-item').forEach(item => {
         item.onclick = (e) => {
             e.preventDefault();
-            const catId = item.getAttribute('data-category');
-            const target = document.getElementById(`section-${catId}`);
-            
-            if (target) {
-                isAutoScrolling = true; 
-                updateActiveNav(catId);
-                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                setTimeout(() => { isAutoScrolling = false; }, 1000);
-            }
+            const navId = item.getAttribute('data-category');
+            const secId = sectionIdForNav(navId);
+            currentCategory = navId;
+            document.querySelectorAll('.nav-item').forEach(n => {
+                n.classList.toggle('active', n.getAttribute('data-category') === navId);
+            });
+            renderAll();
+            setupObservers();
         };
     });
 
@@ -481,7 +512,7 @@ function applyPresetAccent() {
     const selectedColor = accentItem ? accentItem.value : 'solaris';
     
     const colors = {
-        solaris: { hex: '#ff9500', rgb: '255, 149, 0', bright: '#ffb700' },
+        solaris: { hex: '#00b585', rgb: '0, 181, 133', bright: '#00e0a5' },
         green: { hex: '#22c55e', rgb: '34, 197, 94', bright: '#4ade80' },
         blue: { hex: '#3b82f6', rgb: '59, 130, 246', bright: '#60a5fa' },
         purple: { hex: '#a855f7', rgb: '168, 85, 247', bright: '#c084fc' },
@@ -614,17 +645,7 @@ function handleSolarisMessage(data) {
     }
 
     if (data.type === "solaris:init") {
-        if (data.theme && data.theme.length >= 3) {
-            const r = data.theme[0], g = data.theme[1], b = data.theme[2];
-            setAccentColor(
-                "#" + [r, g, b].map(function (x) {
-                    const h = Math.max(0, Math.min(255, x | 0)).toString(16);
-                    return h.length === 1 ? "0" + h : h;
-                }).join(""),
-                r + ", " + g + ", " + b,
-                null
-            );
-        }
+        applyPresetAccent();
         return;
     }
 }
