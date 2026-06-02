@@ -146,7 +146,7 @@ function init() {
 
 /* ---- Render ALL categories ---- */
 function renderAll() {
-    tileGrid.innerHTML = '';
+    const frag = document.createDocumentFragment();
 
     const sectionId = sectionIdForNav(currentCategory);
     const catIds = searchQuery
@@ -154,7 +154,11 @@ function renderAll() {
         : (menuData[sectionId] ? [sectionId] : [currentCategory]);
 
     if (!catIds.length || (catIds.length === 1 && !menuData[catIds[0]])) {
-        tileGrid.innerHTML = '<div class="menu-loading">Loading options…</div>';
+        const loading = document.createElement('div');
+        loading.className = 'menu-loading';
+        loading.textContent = 'Loading options…';
+        frag.appendChild(loading);
+        tileGrid.replaceChildren(frag);
         return;
     }
 
@@ -340,13 +344,14 @@ function renderAll() {
         });
 
         if (itemsRendered > 0) {
-            tileGrid.appendChild(section);
+            frag.appendChild(section);
         }
     });
 
-    // Forced reveal for top section
-    const firstSection = tileGrid.querySelector('.category-section');
+    const firstSection = frag.querySelector('.category-section');
     if (firstSection) firstSection.classList.add('reveal');
+    tileGrid.replaceChildren(frag);
+    setupObservers();
 }
 
 /* ---- Intersection Observers ---- */
@@ -402,14 +407,12 @@ function setupEvents() {
                 n.classList.toggle('active', n.getAttribute('data-category') === navId);
             });
             renderAll();
-            setupObservers();
         };
     });
 
     searchInput.oninput = (e) => {
         searchQuery = e.target.value.toLowerCase();
         renderAll();
-        setupObservers(); 
     };
 }
 
@@ -572,6 +575,7 @@ window.__solClickAt = function(x, y, texW, texH) {
     const cy = Math.floor(y * (vh / texH));
     const el = document.elementFromPoint(cx, cy);
     if (!el) return;
+    if (el.closest('.menu-drag-bar')) return;
 
     const nav = el.closest('.nav-item');
     if (nav) {
@@ -662,9 +666,15 @@ function handleSolarisMessage(data) {
         document.documentElement.classList.add("dui-mode");
         document.body.classList.add("dui-mode");
         document.body.classList.remove("dui-boot");
-        document.body.style.display = show ? "flex" : "none";
-        document.body.style.visibility = show ? "visible" : "hidden";
-        document.body.style.opacity = show ? "1" : "0";
+        if (!show) {
+            document.body.style.display = "none";
+            document.body.style.visibility = "hidden";
+            document.body.style.opacity = "0";
+        } else {
+            document.body.style.display = "flex";
+            document.body.style.visibility = "visible";
+            document.body.style.opacity = "1";
+        }
         var wrap = document.querySelector(".menu-wrapper");
         if (wrap) {
             wrap.style.display = "flex";

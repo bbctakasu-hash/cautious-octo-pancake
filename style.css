@@ -71,6 +71,21 @@ body::before {
     z-index: -1;
 }
 
+.menu-drag-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 34px;
+    z-index: 60;
+    cursor: move;
+    pointer-events: auto;
+}
+
+body.dui-mode .menu-drag-bar {
+    height: 36px;
+}
+
 .menu-wrapper {
     width: min(950px, 96vw);
     height: min(650px, 92vh);
