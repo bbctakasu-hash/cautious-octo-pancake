@@ -575,8 +575,6 @@ window.__solClickAt = function(x, y, texW, texH) {
     const cy = Math.floor(y * (vh / texH));
     const el = document.elementFromPoint(cx, cy);
     if (!el) return;
-    if (el.closest('.menu-drag-bar')) return;
-
     const nav = el.closest('.nav-item');
     if (nav) {
         nav.click();
