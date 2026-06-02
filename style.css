@@ -18,9 +18,9 @@
     --text-mid: #94a3b8;
     --text-low: #475569;
     
-    /* Fonts */
-    --font-ui: 'Inter', sans-serif;
-    --font-logo: 'Outfit', sans-serif;
+    /* Fonts — system stack (no CDN wait in FiveM DUI) */
+    --font-ui: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --font-logo: 'Segoe UI', system-ui, -apple-system, sans-serif;
     
     /* Layout */
     --glass-blur: none;

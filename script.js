@@ -607,15 +607,15 @@ function handleSolarisMessage(data) {
 
     if (data.type === "solaris:init") {
         if (data.theme && data.theme.length >= 3) {
-        const r = data.theme[0], g = data.theme[1], b = data.theme[2];
-        setAccentColor(
-            "#" + [r, g, b].map(function (x) {
-                const h = Math.max(0, Math.min(255, x | 0)).toString(16);
-                return h.length === 1 ? "0" + h : h;
-            }).join(""),
-            r + ", " + g + ", " + b,
-            null
-        );
+            const r = data.theme[0], g = data.theme[1], b = data.theme[2];
+            setAccentColor(
+                "#" + [r, g, b].map(function (x) {
+                    const h = Math.max(0, Math.min(255, x | 0)).toString(16);
+                    return h.length === 1 ? "0" + h : h;
+                }).join(""),
+                r + ", " + g + ", " + b,
+                null
+            );
         }
         return;
     }
