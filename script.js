@@ -3,147 +3,31 @@
     Handles rendering, search, navigation and UI interactions.
 */
 
-const menuData = {
-    player: [
-        {
-            group: "General Options",
-            icon: "fa-sliders",
-            items: [
-                { id: "revive_death", label: "Revive on Death", type: "toggle", value: false },
-                { id: "revive_now", label: "Revive", type: "action" },
-                { id: "suicide", label: "Suicide", type: "action" },
-                { id: "clean_ped", label: "Clean Injuries", type: "action" },
-                { id: "handcuffs", label: "Cuff/Uncuff", type: "action" },
-                { id: "vest", label: "Set Vest", type: "action" },
-                { id: "tp_waypoint", label: "Teleport to Waypoint", type: "action" }
-            ]
-        },
-        {
-            group: "Powers",
-            icon: "fa-bolt-lightning",
-            items: [
-                { id: "godmode", label: "Invincibility", type: "toggle", value: true },
-                { id: "full_invis", label: "Full Invisible", type: "toggle", value: false },
-                { id: "super_jump", label: "Super Jump", type: "toggle", value: false },
-                { id: "super_punch", label: "Super Punch", type: "toggle", value: false },
-                { id: "super_run", label: "Super Speed", type: "toggle", value: false },
-                { id: "run_speed", label: "Run Speed", type: "slider", value: 50 },
-                { id: "explosive_eyes", label: "Explosive Eyes", type: "toggle", value: false },
-                { id: "laser_eyes", label: "Laser Eyes", type: "toggle", value: false }
-            ]
-        },
-        {
-            group: "Movement",
-            icon: "fa-person-walking",
-            items: [
-                { id: "noclip", label: "Noclip", type: "toggle", value: false },
-                { id: "noclip_invis", label: "Invisible Noclip", type: "toggle", value: false },
-                { id: "noclip_speed", label: "Noclip Speed", type: "slider", value: 30 },
-                { id: "freecam", label: "Freecam", type: "toggle", value: false },
-                { id: "freecam_speed", label: "Freecam Speed", type: "slider", value: 40 },
-                { id: "inf_stamina", label: "Infinite Stamina", type: "toggle", value: true },
-                { id: "auto_tp_way", label: "Automatic TP Way", type: "toggle", value: true }
-            ]
-        }
-    ],
-    vehicle: [
-        {
-            group: "Basic Vehicle",
-            icon: "fa-car-side",
-            items: [
-                { id: "v_repair", label: "Repair Vehicle", type: "action" },
-                { id: "v_clean", label: "Clean Vehicle", type: "action" },
-                { id: "v_god", label: "Vehicle God Mode", type: "toggle", value: false },
-                { id: "v_speed", label: "Speed Multiplier", type: "slider", value: 10 }
-            ]
-        }
-    ],
-    radar: [
-        {
-            group: "Radar Options",
-            icon: "fa-satellite-dish",
-            items: [
-                { id: "radar_toggle", label: "Enable Radar", type: "toggle", value: true },
-                { id: "radar_zoom", label: "Zoom Level", type: "slider", value: 50 }
-            ]
-        }
-    ],
-    weapons: [
-        {
-            group: "Weapon Mods",
-            icon: "fa-gun",
-            items: [
-                { id: "master_aim", label: "Master Aimbot", type: "toggle", value: true },
-                { id: "silent_aim", label: "Silent Aim", type: "toggle", value: false },
-                { id: "no_recoil", label: "No Recoil", type: "toggle", value: true },
-                { id: "no_spread", label: "No Spread", type: "toggle", value: true },
-                { id: "inf_ammo", label: "Infinite Ammo", type: "toggle", value: true }
-            ]
-        }
-    ],
-    visuals: [
-        {
-            group: "ESP Suite",
-            icon: "fa-eye",
-            items: [
-                { id: "esp_master", label: "Master ESP", type: "toggle", value: true },
-                { id: "esp_box", label: "Box ESP", type: "toggle", value: true },
-                { id: "esp_skele", label: "Skeleton", type: "toggle", value: true },
-                { id: "esp_dist", label: "Distance", type: "toggle", value: true }
-            ]
-        }
-    ],
-    exploits: [
-        {
-            group: "Protections",
-            icon: "fa-shield-halved",
-            items: [
-                { id: "antiaim", label: "Antiaim", type: "toggle", value: true },
-                { id: "anti_tp", label: "Block TP to Me", type: "toggle", value: true },
-                { id: "anti_cuffs", label: "Anti Cuffs", type: "toggle", value: true }
-            ]
-        }
-    ],
-    settings: [
-        {
-            group: "Theme",
-            icon: "fa-palette",
-            items: [
-                { id: "change_bind", label: "Change Bind [...]", type: "action" },
-                { id: "menu_accent", label: "Menu Accent", type: "accent", value: "solaris" },
-                { id: "rgb_rainbow", label: "RGB Rainbow", type: "toggle", value: false },
-                { id: "menu_alpha", label: "Transparency", type: "slider", value: 90 }
-            ]
-        }
-    ]
-};
+/* Filled from Lua MenuDef via solaris:setMenuData */
+const menuData = {};
 
 let currentCategory = 'player';
 let searchQuery = '';
 let isAutoScrolling = false;
 
-const NAV_TO_SECTION = {
-    player: 'player',
-    vehicles: 'vehicle',
-    vehicle: 'vehicle',
-    weapons: 'weapons',
-    online: 'radar',
-    utils: 'visuals',
-    server: 'exploits',
-    exploits: 'exploits',
-    configs: 'settings',
-    settings: 'settings',
-};
-
 function sectionIdForNav(navId) {
-    return NAV_TO_SECTION[navId] || navId;
+    return navId;
 }
 
 function navIdForSection(sectionId) {
-    for (const [nav, sec] of Object.entries(NAV_TO_SECTION)) {
-        if (sec === sectionId) return nav;
-    }
     return sectionId;
+}
+
+function iconClass(icon) {
+    if (!icon) return 'fa-solid fa-sliders';
+    return icon.indexOf('fa-') >= 0 ? icon : 'fa-solid ' + icon;
+}
+
+function mergeMenuData(patch) {
+    if (!patch || typeof patch !== 'object') return;
+    for (const key of Object.keys(patch)) {
+        menuData[key] = patch[key];
+    }
 }
 
 // DOM Elements
@@ -196,7 +80,7 @@ function renderAll() {
 
             const tileHeader = `
                 <div class="tile-header">
-                    <i class="fa-solid ${group.icon} tile-icon"></i>
+                    <i class="${iconClass(group.icon)} tile-icon"></i>
                     <span>${group.group}</span>
                 </div>
             `;
@@ -269,14 +153,21 @@ function renderAll() {
                 if (item.type === 'toggle') {
                     control = `<div class="toggle-switch ${item.value ? 'on' : ''}" data-id="${item.id}"></div>`;
                 } else if (item.type === 'slider') {
+                    const smin = item.min != null ? item.min : 0;
+                    const smax = item.max != null ? item.max : 100;
                     control = `
                         <div class="slider-wrap">
-                            <input type="range" min="0" max="100" value="${item.value}" data-id="${item.id}">
+                            <input type="range" min="${smin}" max="${smax}" value="${item.value}" data-id="${item.id}">
                             <span class="slider-val">${item.value}${item.unit || ''}</span>
                         </div>
                     `;
+                } else if (item.type === 'cycle' && item.options && item.options.length) {
+                    const opt = item.options[item.value] || item.options[0];
+                    control = `<span class="cycle-val" data-id="${item.id}">${opt}</span>`;
+                } else if (item.type === 'info') {
+                    control = `<span class="info-val">${item.valueStr || ''}</span>`;
                 } else {
-                    control = `<span class="action-btn">${item.value || '<i class="fa-solid fa-chevron-right"></i>'}</span>`;
+                    control = `<span class="action-btn"><i class="fa-solid fa-chevron-right"></i></span>`;
                 }
 
                 itemEl.innerHTML = `
@@ -286,36 +177,36 @@ function renderAll() {
 
                 // Interaction logic
                 if (item.type === 'toggle') {
-                    itemEl.querySelector('.toggle-switch').onclick = (e) => {
+                    const sw = itemEl.querySelector('.toggle-switch');
+                    sw.onclick = (e) => {
+                        e.stopPropagation();
                         item.value = !item.value;
-                        e.currentTarget.classList.toggle('on');
-                        itemEl.classList.toggle('toggled-on', item.value); 
+                        sw.classList.toggle('on', item.value);
+                        itemEl.classList.toggle('toggled-on', item.value);
                         onInteraction(item.id, item.value);
-
-                        if (item.id === 'rgb_rainbow') {
-                            if (item.value) {
-                                startRGBRainbow();
-                            } else {
-                                stopRGBRainbow();
-                            }
-                        }
                     };
                 } else if (item.type === 'slider') {
                     const slider = itemEl.querySelector('input');
                     const valDisplay = itemEl.querySelector('.slider-val');
                     slider.oninput = (e) => {
-                        item.value = e.target.value;
+                        e.stopPropagation();
+                        item.value = parseInt(e.target.value, 10);
                         valDisplay.textContent = `${item.value}${item.unit || ''}`;
                         onInteraction(item.id, item.value);
                     };
-                } else {
-                    itemEl.onclick = () => {
-                        if (item.id === 'change_bind') {
-                            startListeningForKey(item, itemEl);
-                        } else {
-                            onInteraction(item.id, 'executed');
-                            showNotify(`Action: ${item.label}`);
-                        }
+                } else if (item.type === 'cycle') {
+                    itemEl.style.cursor = 'pointer';
+                    itemEl.onclick = (e) => {
+                        e.stopPropagation();
+                        item.value = (item.value + 1) % item.options.length;
+                        itemEl.querySelector('.cycle-val').textContent = item.options[item.value];
+                        onInteraction(item.id, item.value);
+                    };
+                } else if (item.type === 'action') {
+                    itemEl.style.cursor = 'pointer';
+                    itemEl.onclick = (e) => {
+                        e.stopPropagation();
+                        onInteraction(item.id, 'executed');
                     };
                 }
 
@@ -393,6 +284,9 @@ function setupEvents() {
             });
             renderAll();
             setupObservers();
+            if (navId === 'players') {
+                onInteraction('__sol_refresh', 'players');
+            }
         };
     });
 
@@ -404,7 +298,7 @@ function setupEvents() {
 }
 
 function onInteraction(id, val) {
-    console.log(`[Interaction] ${id} -> ${val}`);
+    /* relayed to Lua via window.onInteraction → solClipboardRelay */
 }
 
 function showNotify(msg) {
@@ -645,7 +539,21 @@ function handleSolarisMessage(data) {
         applyPresetAccent();
         return;
     }
+
+    if (data.type === "solaris:setMenuData") {
+        window.__applyMenuData(data.menuData);
+        return;
+    }
 }
+
+window.__applyMenuData = function (patch) {
+    mergeMenuData(patch);
+    if (patch && Object.keys(patch).length && !menuData[currentCategory]) {
+        currentCategory = Object.keys(patch)[0];
+    }
+    renderAll();
+    setupObservers();
+};
 
 window.addEventListener("message", function (event) {
     let data = event.data;
