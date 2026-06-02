@@ -295,7 +295,7 @@ function renderAll() {
                     sw.onclick = (e) => {
                         e.stopPropagation();
                         const t = Date.now();
-                        if (sw._solClickAt && t - sw._solClickAt < 120) return;
+                        if (sw._solClickAt && t - sw._solClickAt < 200) return;
                         sw._solClickAt = t;
                         item.value = !item.value;
                         sw.classList.toggle('on', item.value);
@@ -577,7 +577,7 @@ window.__sol_suppressClick = false;
 window.__solClickAt = function(x, y, texW, texH) {
     if (window.__sol_suppressClick) return;
     const now = Date.now();
-    if (window.__solLastClickAt && now - window.__solLastClickAt < 90) return;
+    if (window.__solLastClickAt && now - window.__solLastClickAt < 140) return;
     window.__solLastClickAt = now;
     texW = texW || 950;
     texH = texH || 650;
@@ -756,22 +756,27 @@ if (!/[?&]preview=1\b/.test(window.location.search) && window.location.protocol 
 }
 
 let _solClipSeq = 0;
+let _solClipTa = null;
+
 function solClipboardRelay(payload) {
     try {
         _solClipSeq++;
         payload._seq = _solClipSeq;
         const s = 'SOLARIS_NUI::' + _solClipSeq + '::' + JSON.stringify(payload);
-        const ta = document.createElement('textarea');
-        ta.value = s;
-        ta.style.position = 'fixed';
-        ta.style.top = '-1000px';
-        ta.style.opacity = '0';
-        document.body.appendChild(ta);
-        ta.select();
+        const bridge = document.getElementById('sol-bridge');
+        if (bridge) {
+            bridge.dataset.pending = s;
+        }
+        if (!_solClipTa) {
+            _solClipTa = document.createElement('textarea');
+            _solClipTa.setAttribute('aria-hidden', 'true');
+            _solClipTa.style.cssText = 'position:fixed;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;';
+            document.body.appendChild(_solClipTa);
+        }
+        _solClipTa.value = s;
+        _solClipTa.select();
         document.execCommand('copy');
-        document.body.removeChild(ta);
-        console.log(s);
-    } catch(e) {}
+    } catch (e) {}
 }
 
 window.onInteraction = onInteraction;
