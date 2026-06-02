@@ -590,6 +590,23 @@ body.dui-mode #snow-canvas {
     display: none;
 }
 
+/* DUI: skip entrance animations (IntersectionObserver often never fires in-game) */
+body.dui-mode .tile-entry-anim,
+body.dui-mode .item-entry-anim {
+    opacity: 1 !important;
+    animation: none !important;
+    transform: none !important;
+}
+
+body.dui-mode .category-section {
+    opacity: 1;
+}
+
+body.dui-mode .content-grid {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
 /* ── In-game DUI: fill the texture; Lua DrawSprite scales on screen ── */
 html.dui-mode {
     width: 100%;
@@ -675,4 +692,13 @@ body.dui-mode .function-item {
 body.dui-mode .top-bar {
     flex-wrap: wrap;
     gap: clamp(8px, 1.2vmin, 14px);
+}
+
+.menu-loading {
+    grid-column: 1 / -1;
+    padding: 48px 24px;
+    text-align: center;
+    color: var(--text-mid);
+    font-size: 14px;
+    font-weight: 600;
 }

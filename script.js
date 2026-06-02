@@ -50,14 +50,20 @@ function renderAll() {
         ? Object.keys(menuData)
         : (menuData[sectionId] ? [sectionId] : [currentCategory]);
 
+    if (!catIds.length || (catIds.length === 1 && !menuData[catIds[0]])) {
+        tileGrid.innerHTML = '<div class="menu-loading">Loading options…</div>';
+        return;
+    }
+
     catIds.forEach(catId => {
         const categoryData = menuData[catId];
-        if (!categoryData) return;
+        if (!categoryData || !categoryData.length) return;
         
         const section = document.createElement('div');
         section.className = 'category-section';
         section.id = `section-${catId}`;
         section.setAttribute('data-category', catId);
+        section.classList.add('reveal');
 
         const header = document.createElement('div');
         header.className = 'category-header';
@@ -75,8 +81,7 @@ function renderAll() {
             if (filteredItems.length === 0) return;
 
             const tile = document.createElement('div');
-            tile.className = 'tile tile-entry-anim';
-            tile.style.animationDelay = `${groupIdx * 60}ms`;
+            tile.className = 'tile';
 
             const tileHeader = `
                 <div class="tile-header">
@@ -143,11 +148,10 @@ function renderAll() {
                 }
 
                 const itemEl = document.createElement('div');
-                itemEl.className = 'function-item item-entry-anim';
+                itemEl.className = 'function-item';
                 if (item.type === 'toggle' && item.value) {
                     itemEl.classList.add('toggled-on');
                 }
-                itemEl.style.animationDelay = delay;
 
                 let control = '';
                 if (item.type === 'toggle') {
@@ -284,9 +288,7 @@ function setupEvents() {
             });
             renderAll();
             setupObservers();
-            if (navId === 'players') {
-                onInteraction('__sol_refresh', 'players');
-            }
+            onInteraction('__sol_refresh', navId);
         };
     });
 
