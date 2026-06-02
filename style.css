@@ -550,9 +550,28 @@ input[type="range"]:hover + .slider-val {
     left: 21px;
 }
 
+.notification {
+    position: absolute;
+    left: 50%;
+    bottom: 14px;
+    transform: translateX(-50%) translateY(8px);
+    z-index: 20;
+    max-width: 88%;
+    padding: 8px 14px;
+    border-radius: 6px;
+    background: rgba(12, 12, 16, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--text-high);
+    font-size: 12px;
+    text-align: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
 .notification.show {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateX(-50%) translateY(0);
 }
 
 /* --- Accent Color Picker --- */
@@ -632,8 +651,9 @@ body.dui-mode .menu-wrapper {
     align-self: center;
     min-width: 0;
     min-height: 0;
-    border-radius: var(--radius);
-    box-shadow: 0 60px 120px -30px rgba(0, 0, 0, 1), 0 0 60px rgba(0, 0, 0, 0.6);
+    position: relative;
+    border-radius: 10px;
+    box-shadow: 0 40px 80px -24px rgba(0, 0, 0, 0.95), 0 0 40px rgba(0, 0, 0, 0.45);
 }
 
 body.dui-mode .sidebar {
