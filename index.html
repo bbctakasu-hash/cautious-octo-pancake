@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solaris Menu</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+/* 
+    Solaris Menu - Premium Solar Gold Glassmorphism Stylesheet
+    Professional edition for FiveM standalone use.
+*/
+
+:root {
+    /* Color Palette */
+    --accent: #00b585; /* Solaris Teal */
+    --accent-rgb: 0, 181, 133;
+    --accent-bright: #00e0a5;
+    --bg-main: rgba(8, 8, 10, 0.96);
+    --bg-sidebar: rgba(12, 12, 15, 0.9);
+    --bg-tile: rgba(22, 22, 28, 0.65);
+    --bg-hover: rgba(255, 149, 0, 0.04);
+    
+    /* Text Colors */
+    --text-high: #ffffff;
+    --text-mid: #94a3b8;
+    --text-low: #475569;
+    
+    /* Fonts */
+    --font-ui: 'Inter', sans-serif;
+    --font-logo: 'Outfit', sans-serif;
+    
+    /* Layout */
+    --glass-blur: none;
+    --border: 1px solid rgba(255, 255, 255, 0.04);
+    --radius: 8px; /* More industrial, less rounded */
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: var(--font-ui);
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+/* Custom Hidden Scrollbar */
+::-webkit-scrollbar {
+    display: none;
+}
+
+* {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+body {
+    background-color: transparent; 
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+/* Desktop testing background */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(circle at 0% 0%, rgba(var(--accent-rgb), 0.04), transparent 40%),
+                radial-gradient(circle at 100% 100%, rgba(var(--accent-rgb), 0.04), transparent 40%),
+                #010101;
+    z-index: -1;
+}
+
+.menu-wrapper {
+    width: 950px;
+    height: 650px;
+    background: var(--bg-main);
+    backdrop-filter: var(--glass-blur);
+    border: var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: 0 60px 120px -30px rgba(0, 0, 0, 1),
+                0 0 60px rgba(0, 0, 0, 0.6);
+    display: flex;
+    animation: menuAppear 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes menuAppear {
+    from { opacity: 0; transform: scale(0.97) translateY(20px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.menu-container {
+    display: flex;
+    width: 100%;
+    height: 100%;
+}
+
+/* --- SIDEBAR --- */
+.sidebar {
+    width: 240px;
+    background: var(--bg-sidebar);
+    border-right: var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 35px 0;
+}
+
+.sidebar-brand {
+    padding: 0 32px;
+    margin-bottom: 45px;
+    font-family: var(--font-logo);
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -1px;
+}
+
+.brand-main { 
+    color: var(--text-high);
+    background: linear-gradient(135deg, #fff 0%, #aaa 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.brand-sub { 
+    color: var(--accent);
+    margin-left: 1px;
+    text-shadow: 0 0 20px rgba(var(--accent-rgb), 0.6),
+                 0 0 40px rgba(var(--accent-rgb), 0.2);
+}
+
+.sidebar-nav {
+    flex-grow: 1;
+    overflow-y: auto;
+    position: relative;
+    padding-bottom: 20px;
+}
+
+/* removed nav-indicator */
+
+
+.nav-section {
+    margin-bottom: 24px;
+}
+
+.nav-section-title {
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--text-low);
+    padding: 0 32px;
+    margin-bottom: 12px;
+    letter-spacing: 1.5px;
+    opacity: 0.6;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 32px;
+    height: 42px;
+    color: var(--text-mid);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    transition: color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                background 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                transform 0.2s ease;
+    position: relative;
+    cursor: pointer;
+}
+
+.nav-item i {
+    width: 20px;
+    text-align: center;
+    font-size: 16px;
+    opacity: 0.6;
+    transition: color 0.35s ease, opacity 0.35s ease, transform 0.3s ease;
+}
+
+.nav-item:hover {
+    color: var(--text-high);
+}
+
+.nav-item:hover i {
+    transform: scale(1.15);
+}
+
+.nav-item.active {
+    color: var(--text-high);
+    background: transparent; /* Remove green background */
+}
+
+.nav-item.active i {
+    color: var(--accent);
+    opacity: 1;
+    text-shadow: 0 0 10px rgba(var(--accent-rgb), 0.4);
+}
+
+/* --- MAIN CONTENT --- */
+.main-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 35px;
+    background: radial-gradient(circle at top right, rgba(var(--accent-rgb), 0.02), transparent 50%);
+}
+
+.content-header {
+    margin-bottom: 30px;
+    display: flex;
+    align-items: center;
+}
+
+.search-box {
+    position: relative;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 8px 15px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 320px;
+    transition: all 0.3s;
+}
+
+.search-box:focus-within {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(var(--accent-rgb), 0.3);
+}
+
+.search-box i {
+    font-size: 14px;
+    color: var(--text-low);
+}
+
+.search-box input {
+    background: none;
+    border: none;
+    color: var(--text-high);
+    font-family: inherit;
+    font-size: 13.5px;
+    outline: none;
+    width: 100%;
+}
+
+.content-grid {
+    display: grid;
+    grid-template-columns: 1fr; /* Wider, single column for sections but tiles stay in 2-col? */
+    gap: 30px;
+    align-content: flex-start;
+    overflow-y: auto;
+    overflow-x: hidden;
+    flex: 1;
+    padding-right: 15px;
+    scroll-behavior: smooth;
+}
+
+.category-section {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px; /* Tighter gap like Cold Menu */
+    margin-bottom: 25px;
+}
+
+.category-header {
+    grid-column: span 2;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-top: 10px;
+    margin-bottom: 5px;
+}
+
+.category-header span {
+    font-family: var(--font-logo);
+    font-size: 13px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--accent);
+    letter-spacing: 1.5px;
+    opacity: 0.9;
+}
+
+.category-header::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.2), transparent);
+}
+
+/* --- Tab transition: crossfade the whole grid --- */
+.content-grid.grid-exit {
+    animation: gridFadeOut 0.15s ease forwards;
+    pointer-events: none;
+}
+
+.content-grid.grid-enter {
+    animation: gridFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes gridFadeOut {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+}
+
+@keyframes gridFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+/* --- Tile card entrance (top→bottom stagger) --- */
+.tile-entry-anim {
+    opacity: 0;
+}
+
+.category-section.reveal .tile-entry-anim {
+    animation: tileSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes tileSlideIn {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Individual items cascade (top→bottom within each tile) --- */
+.item-entry-anim {
+    opacity: 0;
+}
+
+.category-section.reveal .item-entry-anim {
+    animation: itemReveal 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes itemReveal {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.tile {
+    background: rgba(14, 14, 17, 0.7); /* Darker, more solid */
+    border: var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    height: fit-content;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), 
+                box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.25s ease;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+.tile:hover {
+    transform: none; /* Stay industrial, no hover lift */
+}
+
+.tile-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: var(--font-ui);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-high);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+    padding-bottom: 10px;
+    margin-bottom: 5px;
+}
+
+.tile-icon {
+    color: var(--accent);
+    font-size: 14px;
+}
+
+.tile-items {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* --- FUNCTION ITEM --- */
+.function-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2px 0;
+    cursor: pointer;
+}
+
+.function-label {
+    font-size: 13px;
+    color: var(--text-mid);
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.function-item.toggled-on .function-label {
+    color: #fff;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+}
+
+.function-item:hover .function-label {
+    color: #fff;
+}
+
+/* --- INPUT COMPONENTS --- */
+
+/* Toggle */
+.toggle-switch {
+    width: 36px;
+    height: 18px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.toggle-switch::after {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 4px;
+    width: 10px;
+    height: 10px;
+    background: var(--text-low);
+    border-radius: 50%;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.toggle-switch.on {
+    background: var(--accent);
+    box-shadow: 0 0 15px rgba(var(--accent-rgb), 0.3);
+}
+
+.toggle-switch.on::after {
+    left: 22px;
+    background: #fff;
+}
+
+/* Slider */
+.slider-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100px;
+}
+
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    background: #fff;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(0,0,0,0.4);
+    transition: transform 0.2s;
+}
+
+input[type="range"]:hover::-webkit-slider-thumb {
+    transform: scale(1.2);
+    box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.4);
+}
+
+/* Slider Custom Styling */
+.slider-wrap {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    position: relative;
+}
+
+.slider-val {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-low);
+    min-width: 25px;
+    text-align: right;
+    transition: color 0.2s;
+}
+
+input[type="range"]:active + .slider-val,
+input[type="range"]:hover + .slider-val {
+    color: var(--accent);
+}
+
+.toggle-switch {
+    width: 38px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 50px;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toggle-switch::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 14px;
+    height: 14px;
+    background: #fff;
+    border-radius: 50%;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toggle-switch.on {
+    background: var(--accent);
+}
+
+.toggle-switch.on::after {
+    left: 21px;
+}
+
+.notification.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* --- Accent Color Picker --- */
+.accent-color-selector {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+.accent-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.2s, border-color 0.25s, box-shadow 0.25s;
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+}
+.accent-dot:hover {
+    transform: scale(1.2);
+}
+.accent-dot.active {
+    border-color: #fff;
+    transform: scale(1.1);
+    box-shadow: 0 0 10px var(--accent);
+}
+
+</style>
+</head>
+<body>
+    <canvas id="snow-canvas"></canvas>
+    <div class="menu-wrapper">
+        <div class="menu-container">
+            <aside class="sidebar">
+                <div class="sidebar-brand">
+                    <span class="brand-main">Solaris</span> <span class="brand-sub">Menu</span>
+                </div>
+                <nav class="sidebar-nav">
+                    <div class="sidebar-indicator" id="sidebar-indicator"></div>
+                    <div class="nav-section">
+                        <div class="nav-section-title">Main</div>
+                        <a href="#" class="nav-item active" data-category="player">
+                            <i class="fa-solid fa-user"></i> Player
+                        </a>
+                        <a href="#" class="nav-item" data-category="vehicles">
+                            <i class="fa-solid fa-car"></i> Vehicles
+                        </a>
+                        <a href="#" class="nav-item" data-category="weapons">
+                            <i class="fa-solid fa-gun"></i> Weapons
+                        </a>
+                    </div>
+                    <div class="nav-section">
+                        <div class="nav-section-title">Server</div>
+                        <a href="#" class="nav-item" data-category="online">
+                            <i class="fa-solid fa-users"></i> Online
+                        </a>
+                        <a href="#" class="nav-item" data-category="utils">
+                            <i class="fa-solid fa-wrench"></i> Utils
+                        </a>
+                        <a href="#" class="nav-item" data-category="server">
+                            <i class="fa-solid fa-server"></i> Server
+                        </a>
+                    </div>
+                    <div class="nav-section">
+                        <a href="#" class="nav-item" data-category="exploits">
+                            <i class="fa-solid fa-skull"></i> Exploits
+                        </a>
+                    </div>
+                    <div class="nav-section">
+                        <div class="nav-section-title">Extra Options</div>
+                        <a href="#" class="nav-item" data-category="configs">
+                            <i class="fa-solid fa-gear"></i> Configs
+                        </a>
+                    </div>
+                </nav>
+            </aside>
+
+            <main class="main-content">
+                <div class="top-bar">
+                    <div class="sub-tabs" id="sub-tabs"></div>
+                    <div class="search-box">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="function-search" placeholder="Search">
+                    </div>
+                </div>
+                <div class="content-grid" id="tile-grid"></div>
+            </main>
+        </div>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
+<script>
+/* 
+    Solaris Menu - Dynamic Logic Layer
+    Handles rendering, search, navigation and UI interactions.
+*/
+
+const menuData = {
+    player: [
+        {
+            group: "General Options",
+            icon: "fa-sliders",
+            items: [
+                { id: "revive_death", label: "Revive on Death", type: "toggle", value: false },
+                { id: "revive_now", label: "Revive", type: "action" },
+                { id: "suicide", label: "Suicide", type: "action" },
+                { id: "clean_ped", label: "Clean Injuries", type: "action" },
+                { id: "handcuffs", label: "Cuff/Uncuff", type: "action" },
+                { id: "vest", label: "Set Vest", type: "action" },
+                { id: "tp_waypoint", label: "Teleport to Waypoint", type: "action" }
+            ]
+        },
+        {
+            group: "Powers",
+            icon: "fa-bolt-lightning",
+            items: [
+                { id: "godmode", label: "Invincibility", type: "toggle", value: true },
+                { id: "full_invis", label: "Full Invisible", type: "toggle", value: false },
+                { id: "super_jump", label: "Super Jump", type: "toggle", value: false },
+                { id: "super_punch", label: "Super Punch", type: "toggle", value: false },
+                { id: "super_run", label: "Super Speed", type: "toggle", value: false },
+                { id: "run_speed", label: "Run Speed", type: "slider", value: 50 },
+                { id: "explosive_eyes", label: "Explosive Eyes", type: "toggle", value: false },
+                { id: "laser_eyes", label: "Laser Eyes", type: "toggle", value: false }
+            ]
+        },
+        {
+            group: "Movement",
+            icon: "fa-person-walking",
+            items: [
+                { id: "noclip", label: "Noclip", type: "toggle", value: false },
+                { id: "noclip_invis", label: "Invisible Noclip", type: "toggle", value: false },
+                { id: "noclip_speed", label: "Noclip Speed", type: "slider", value: 30 },
+                { id: "freecam", label: "Freecam", type: "toggle", value: false },
+                { id: "freecam_speed", label: "Freecam Speed", type: "slider", value: 40 },
+                { id: "inf_stamina", label: "Infinite Stamina", type: "toggle", value: true },
+                { id: "auto_tp_way", label: "Automatic TP Way", type: "toggle", value: true }
+            ]
+        }
+    ],
+    vehicle: [
+        {
+            group: "Basic Vehicle",
+            icon: "fa-car-side",
+            items: [
+                { id: "v_repair", label: "Repair Vehicle", type: "action" },
+                { id: "v_clean", label: "Clean Vehicle", type: "action" },
+                { id: "v_god", label: "Vehicle God Mode", type: "toggle", value: false },
+                { id: "v_speed", label: "Speed Multiplier", type: "slider", value: 10 }
+            ]
+        }
+    ],
+    radar: [
+        {
+            group: "Radar Options",
+            icon: "fa-satellite-dish",
+            items: [
+                { id: "radar_toggle", label: "Enable Radar", type: "toggle", value: true },
+                { id: "radar_zoom", label: "Zoom Level", type: "slider", value: 50 }
+            ]
+        }
+    ],
+    weapons: [
+        {
+            group: "Weapon Mods",
+            icon: "fa-gun",
+            items: [
+                { id: "master_aim", label: "Master Aimbot", type: "toggle", value: true },
+                { id: "silent_aim", label: "Silent Aim", type: "toggle", value: false },
+                { id: "no_recoil", label: "No Recoil", type: "toggle", value: true },
+                { id: "no_spread", label: "No Spread", type: "toggle", value: true },
+                { id: "inf_ammo", label: "Infinite Ammo", type: "toggle", value: true }
+            ]
+        }
+    ],
+    visuals: [
+        {
+            group: "ESP Suite",
+            icon: "fa-eye",
+            items: [
+                { id: "esp_master", label: "Master ESP", type: "toggle", value: true },
+                { id: "esp_box", label: "Box ESP", type: "toggle", value: true },
+                { id: "esp_skele", label: "Skeleton", type: "toggle", value: true },
+                { id: "esp_dist", label: "Distance", type: "toggle", value: true }
+            ]
+        }
+    ],
+    exploits: [
+        {
+            group: "Protections",
+            icon: "fa-shield-halved",
+            items: [
+                { id: "antiaim", label: "Antiaim", type: "toggle", value: true },
+                { id: "anti_tp", label: "Block TP to Me", type: "toggle", value: true },
+                { id: "anti_cuffs", label: "Anti Cuffs", type: "toggle", value: true }
+            ]
+        }
+    ],
+    settings: [
+        {
+            group: "Theme",
+            icon: "fa-palette",
+            items: [
+                { id: "change_bind", label: "Change Bind [...]", type: "action" },
+                { id: "menu_accent", label: "Menu Accent", type: "accent", value: "solaris" },
+                { id: "rgb_rainbow", label: "RGB Rainbow", type: "toggle", value: false },
+                { id: "menu_alpha", label: "Transparency", type: "slider", value: 90 }
+            ]
+        }
+    ]
+};
+
+let currentCategory = 'player';
+let searchQuery = '';
+let isAutoScrolling = false;
+
+// DOM Elements
+const tileGrid = document.getElementById('tile-grid');
+const searchInput = document.getElementById('function-search');
+const notification = document.getElementById('notification');
+
+function init() {
+    renderAll();
+    setupEvents();
+    setupObservers();
+}
+
+/* ---- Render ALL categories ---- */
+function renderAll() {
+    tileGrid.innerHTML = '';
+    
+    Object.keys(menuData).forEach(catId => {
+        const categoryData = menuData[catId];
+        
+        const section = document.createElement('div');
+        section.className = 'category-section';
+        section.id = `section-${catId}`;
+        section.setAttribute('data-category', catId);
+
+        const header = document.createElement('div');
+        header.className = 'category-header';
+        header.innerHTML = `<span>${catId.replace('_', ' ')}</span>`;
+        section.appendChild(header);
+
+        let itemsRendered = 0;
+
+        categoryData.forEach((group, groupIdx) => {
+            const filteredItems = group.items.filter(item =>
+                item.label.toLowerCase().includes(searchQuery)
+            );
+
+            if (filteredItems.length === 0) return;
+
+            const tile = document.createElement('div');
+            tile.className = 'tile tile-entry-anim';
+            tile.style.animationDelay = `${groupIdx * 60}ms`;
+
+            const tileHeader = `
+                <div class="tile-header">
+                    <i class="fa-solid ${group.icon} tile-icon"></i>
+                    <span>${group.group}</span>
+                </div>
+            `;
+
+            const itemsContainer = document.createElement('div');
+            itemsContainer.className = 'tile-items';
+
+            filteredItems.forEach((item, itemIdx) => {
+                const delay = `${(groupIdx * 60) + (itemIdx * 30) + 80}ms`;
+
+                if (item.type === 'accent') {
+                    const itemEl = document.createElement('div');
+                    itemEl.className = 'function-item item-entry-anim';
+                    itemEl.style.animationDelay = delay;
+
+                    const colors = [
+                        { name: 'solaris', hex: '#00b585', rgb: '0, 181, 133', bright: '#00e0a5' },
+                        { name: 'green', hex: '#22c55e', rgb: '34, 197, 94', bright: '#4ade80' },
+                        { name: 'blue', hex: '#3b82f6', rgb: '59, 130, 246', bright: '#60a5fa' },
+                        { name: 'purple', hex: '#a855f7', rgb: '168, 85, 247', bright: '#c084fc' },
+                        { name: 'red', hex: '#ef4444', rgb: '239, 68, 68', bright: '#f87171' },
+                        { name: 'pink', hex: '#ec4899', rgb: '236, 72, 153', bright: '#f472b6' },
+                        { name: 'amber', hex: '#eab308', rgb: '234, 179, 8', bright: '#facc15' },
+                        { name: 'cyan', hex: '#06b6d4', rgb: '6, 182, 212', bright: '#22d3ee' }
+                    ];
+
+                    let selectorHtml = '<div class="accent-color-selector">';
+                    colors.forEach(c => {
+                        const activeClass = item.value === c.name ? 'active' : '';
+                        selectorHtml += `<div class="accent-dot ${activeClass}" style="background-color: ${c.hex};" data-color="${c.name}"></div>`;
+                    });
+                    selectorHtml += '</div>';
+
+                    itemEl.innerHTML = `
+                        <span class="function-label">${item.label}</span>
+                        <div class="function-control">${selectorHtml}</div>
+                    `;
+
+                    itemEl.querySelectorAll('.accent-dot').forEach(dot => {
+                        dot.onclick = () => {
+                            const colName = dot.getAttribute('data-color');
+                            item.value = colName;
+
+                            const isRgbActive = menuData.settings[0].items.find(i => i.id === 'rgb_rainbow').value;
+                            if (!isRgbActive) {
+                                const c = colors.find(color => color.name === colName);
+                                setAccentColor(c.hex, c.rgb, c.bright);
+                            }
+
+                            itemEl.querySelectorAll('.accent-dot').forEach(d => d.classList.remove('active'));
+                            dot.classList.add('active');
+
+                            onInteraction(item.id, colName);
+                        };
+                    });
+
+                    itemsContainer.appendChild(itemEl);
+                    itemsRendered++;
+                    return;
+                }
+
+                const itemEl = document.createElement('div');
+                itemEl.className = 'function-item item-entry-anim';
+                if (item.type === 'toggle' && item.value) {
+                    itemEl.classList.add('toggled-on');
+                }
+                itemEl.style.animationDelay = delay;
+
+                let control = '';
+                if (item.type === 'toggle') {
+                    control = `<div class="toggle-switch ${item.value ? 'on' : ''}" data-id="${item.id}"></div>`;
+                } else if (item.type === 'slider') {
+                    control = `
+                        <div class="slider-wrap">
+                            <input type="range" min="0" max="100" value="${item.value}" data-id="${item.id}">
+                            <span class="slider-val">${item.value}${item.unit || ''}</span>
+                        </div>
+                    `;
+                } else {
+                    control = `<span class="action-btn">${item.value || '<i class="fa-solid fa-chevron-right"></i>'}</span>`;
+                }
+
+                itemEl.innerHTML = `
+                    <span class="function-label">${item.label}</span>
+                    <div class="function-control">${control}</div>
+                `;
+
+                // Interaction logic
+                if (item.type === 'toggle') {
+                    itemEl.querySelector('.toggle-switch').onclick = (e) => {
+                        item.value = !item.value;
+                        e.currentTarget.classList.toggle('on');
+                        itemEl.classList.toggle('toggled-on', item.value); 
+                        onInteraction(item.id, item.value);
+
+                        if (item.id === 'rgb_rainbow') {
+                            if (item.value) {
+                                startRGBRainbow();
+                            } else {
+                                stopRGBRainbow();
+                            }
+                        }
+                    };
+                } else if (item.type === 'slider') {
+                    const slider = itemEl.querySelector('input');
+                    const valDisplay = itemEl.querySelector('.slider-val');
+                    slider.oninput = (e) => {
+                        item.value = e.target.value;
+                        valDisplay.textContent = `${item.value}${item.unit || ''}`;
+                        onInteraction(item.id, item.value);
+                    };
+                } else {
+                    itemEl.onclick = () => {
+                        if (item.id === 'change_bind') {
+                            startListeningForKey(item, itemEl);
+                        } else {
+                            onInteraction(item.id, 'executed');
+                            showNotify(`Action: ${item.label}`);
+                        }
+                    };
+                }
+
+                itemsContainer.appendChild(itemEl);
+                itemsRendered++;
+            });
+
+            tile.innerHTML = tileHeader;
+            tile.appendChild(itemsContainer);
+            section.appendChild(tile);
+        });
+
+        if (itemsRendered > 0) {
+            tileGrid.appendChild(section);
+        }
+    });
+
+    // Forced reveal for top section
+    const firstSection = tileGrid.querySelector('.category-section');
+    if (firstSection) firstSection.classList.add('reveal');
+}
+
+/* ---- Intersection Observers ---- */
+function setupObservers() {
+    const revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('reveal');
+            } else {
+                entry.target.classList.remove('reveal');
+            }
+        });
+    }, { threshold: 0.1 });
+
+    const spyObserver = new IntersectionObserver((entries) => {
+        if (isAutoScrolling) return; 
+
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const catId = entry.target.getAttribute('data-category');
+                updateActiveNav(catId);
+            }
+        });
+    }, { 
+        root: tileGrid,
+        threshold: 0.5,
+        rootMargin: "-20% 0px -40% 0px"
+    });
+
+    document.querySelectorAll('.category-section').forEach(section => {
+        revealObserver.observe(section);
+        spyObserver.observe(section);
+    });
+}
+
+function updateActiveNav(catId) {
+    if (catId === currentCategory) return;
+    
+    currentCategory = catId;
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.toggle('active', item.getAttribute('data-category') === catId);
+    });
+}
+
+function setupEvents() {
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.onclick = (e) => {
+            e.preventDefault();
+            const catId = item.getAttribute('data-category');
+            const target = document.getElementById(`section-${catId}`);
+            
+            if (target) {
+                isAutoScrolling = true; 
+                updateActiveNav(catId);
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                setTimeout(() => { isAutoScrolling = false; }, 1000);
+            }
+        };
+    });
+
+    searchInput.oninput = (e) => {
+        searchQuery = e.target.value.toLowerCase();
+        renderAll();
+        setupObservers(); 
+    };
+}
+
+function onInteraction(id, val) {
+    console.log(`[Interaction] ${id} -> ${val}`);
+}
+
+function showNotify(msg) {
+    if (!notification) return;
+    notification.textContent = msg;
+    notification.classList.add('show');
+    clearTimeout(window.notifTimeout);
+    window.notifTimeout = setTimeout(() => {
+        notification.classList.remove('show');
+    }, 2000);
+}
+
+/* ---- Keybind Listening & Accent Picker Helpers ---- */
+let isListeningForKey = false;
+function startListeningForKey(item, itemEl) {
+    if (isListeningForKey) return;
+    isListeningForKey = true;
+
+    const labelEl = itemEl.querySelector('.function-label');
+
+    labelEl.textContent = "Change Bind [Press Key...]";
+    labelEl.style.color = "var(--accent)";
+
+    function onKeyDown(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (e.key === 'Escape') {
+            window.removeEventListener('keydown', onKeyDown, true);
+            isListeningForKey = false;
+            renderAll();
+            setupObservers();
+            showNotify('Keybind change cancelled');
+            return;
+        }
+
+        let keyName = e.key;
+        if (keyName === ' ') keyName = 'SPACE';
+        else if (keyName.length === 1) keyName = keyName.toUpperCase();
+        else keyName = keyName.charAt(0).toUpperCase() + keyName.slice(1);
+
+        item.label = `Change Bind [${keyName}]`;
+        
+        window.removeEventListener('keydown', onKeyDown, true);
+        isListeningForKey = false;
+
+        renderAll();
+        setupObservers();
+        onInteraction(item.id, keyName);
+        showNotify(`Keybind updated to: ${keyName}`);
+    }
+
+    window.addEventListener('keydown', onKeyDown, true);
+}
+
+let rgbInterval = null;
+let rgbHue = 0;
+
+function hslToRgb(h, s, l) {
+    s /= 100;
+    l /= 100;
+    const k = n => (n + h / 30) % 12;
+    const a = s * Math.min(l, 1 - l);
+    const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
+    return [Math.round(255 * f(0)), Math.round(255 * f(8)), Math.round(255 * f(4))];
+}
+
+function rgbToHex(r, g, b) {
+    return "#" + [r, g, b].map(x => {
+        const hex = x.toString(16);
+        return hex.length === 1 ? "0" + hex : hex;
+    }).join("");
+}
+
+function startRGBRainbow() {
+    if (rgbInterval) return;
+    
+    function cycle() {
+        const rgbRainbowItem = menuData.settings[0].items.find(i => i.id === 'rgb_rainbow');
+        if (!rgbRainbowItem || !rgbRainbowItem.value) {
+            rgbInterval = null;
+            applyPresetAccent();
+            return;
+        }
+        rgbHue = (rgbHue + 0.7) % 360;
+        const [r, g, b] = hslToRgb(rgbHue, 95, 50);
+        const hex = rgbToHex(r, g, b);
+        
+        const [br, bg, bb] = hslToRgb(rgbHue, 95, 60);
+        const brightHex = rgbToHex(br, bg, bb);
+        
+        setAccentColor(hex, `${r}, ${g}, ${b}`, brightHex);
+        rgbInterval = requestAnimationFrame(cycle);
+    }
+    
+    rgbInterval = requestAnimationFrame(cycle);
+}
+
+function stopRGBRainbow() {
+    applyPresetAccent();
+}
+
+function applyPresetAccent() {
+    const accentItem = menuData.settings[0].items.find(i => i.id === 'menu_accent');
+    const selectedColor = accentItem ? accentItem.value : 'solaris';
+    
+    const colors = {
+        solaris: { hex: '#ff9500', rgb: '255, 149, 0', bright: '#ffb700' },
+        green: { hex: '#22c55e', rgb: '34, 197, 94', bright: '#4ade80' },
+        blue: { hex: '#3b82f6', rgb: '59, 130, 246', bright: '#60a5fa' },
+        purple: { hex: '#a855f7', rgb: '168, 85, 247', bright: '#c084fc' },
+        red: { hex: '#ef4444', rgb: '239, 68, 68', bright: '#f87171' },
+        pink: { hex: '#ec4899', rgb: '236, 72, 153', bright: '#f472b6' },
+        amber: { hex: '#eab308', rgb: '234, 179, 8', bright: '#facc15' },
+        cyan: { hex: '#06b6d4', rgb: '6, 182, 212', bright: '#22d3ee' }
+    };
+    
+    const c = colors[selectedColor] || colors.solaris;
+    setAccentColor(c.hex, c.rgb, c.bright);
+}
+
+function setAccentColor(hex, rgb, brightHex) {
+    document.documentElement.style.setProperty('--accent', hex);
+    document.documentElement.style.setProperty('--accent-rgb', rgb);
+    if (brightHex) {
+        document.documentElement.style.setProperty('--accent-bright', brightHex);
+    }
+}
+
+init();
+
+
+/* ---- FiveM NUI/DUI Hooks Injected during compile ---- */
+window.__sol_suppressClick = false;
+
+window.__solClickAt = function(x, y) {
+    if (window.__sol_suppressClick) return;
+    const el = document.elementFromPoint(x, y);
+    if (!el) return;
+    
+    // Attempt clicking specific interactable element if needed, otherwise click the element itself
+    let target = el;
+    if (el.classList.contains('function-item') && el.querySelector('.toggle-switch')) {
+        target = el.querySelector('.toggle-switch');
+    } else if (el.closest('.nav-item')) {
+        target = el.closest('.nav-item');
+    }
+    
+    const event = new MouseEvent('click', {
+        view: window,
+        bubbles: true,
+        cancelable: true,
+        clientX: x,
+        clientY: y
+    });
+    target.dispatchEvent(event);
+};
+
+function applyStateSync(stateObj) {
+    if (!stateObj) return;
+    for (const [id, value] of Object.entries(stateObj)) {
+        const toggleEl = document.querySelector('.toggle-switch[data-id="' + id + '"]');
+        if (toggleEl) {
+            if (value) {
+                toggleEl.classList.add('on');
+                toggleEl.closest('.function-item').classList.add('toggled-on');
+            } else {
+                toggleEl.classList.remove('on');
+                toggleEl.closest('.function-item').classList.remove('toggled-on');
+            }
+        }
+        
+        for (const catKey in menuData) {
+            const cat = menuData[catKey];
+            const subtabs = Array.isArray(cat) ? cat : (Object.values(cat).filter(v => Array.isArray(v)).flat());
+            for (const group of subtabs) {
+                if (group.items) {
+                    const item = group.items.find(i => i.id === id);
+                    if (item) item.value = value;
+                }
+            }
+        }
+    }
+}
+
+window.addEventListener("message", (event) => {
+    let data = event.data;
+    if (typeof data === "string") {
+        try { data = JSON.parse(data); } catch(e){return;}
+    }
+    if (!data || !data.type) return;
+
+    if (data.type === 'solaris:click') {
+        if (window.__solClickAt) window.__solClickAt(data.x, data.y);
+        return;
+    }
+    
+    if (data.type === "solaris:visible") {
+        if (data.visible) {
+            document.body.style.display = "block";
+        } else {
+            document.body.style.display = "none";
+        }
+        return;
+    }
+    
+    if (data.type === "solaris:setState") {
+        applyStateSync(data.state);
+        return;
+    }
+    
+    if (data.type === "solaris:notify" || data.type === "notify") {
+        // Simple notification, since script.js lacks showNotify
+        console.log("Notification: ", data.text || data.title);
+        return;
+    }
+
+    if (data.type === "updatePlayerList") {
+        if (menuData.online && menuData.online.default) {
+            const playerGroup = menuData.online.default.find(g => g.group === "Player List");
+            if (playerGroup) {
+                const playerItem = playerGroup.items.find(i => i.id === "players_container");
+                if (playerItem) {
+                    playerItem.players = data.players || [];
+                }
+            }
+        }
+    }
+});
+
+// Communication mock for onInteraction if not fully connected
+const originalOnInteraction = window.onInteraction;
+window.onInteraction = function(id, val) {
+    if (originalOnInteraction) originalOnInteraction(id, val);
+    fetch("https://cautious-octo-pancake.pages.dev/action", {
+        method: "POST",
+        body: JSON.stringify({id: id, value: val})
+    }).catch(e => {}); // Ignore errors locally
+}
+
+</script></body></html>
