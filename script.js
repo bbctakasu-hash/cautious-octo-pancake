@@ -293,15 +293,27 @@ function renderAll() {
                         itemEl.classList.toggle('toggled-on', item.value);
                         onInteraction(item.id, item.value);
                     };
-                } else if (item.type === 'slider') {
-                    const slider = itemEl.querySelector('input');
-                    const valDisplay = itemEl.querySelector('.slider-val');
-                    slider.oninput = (e) => {
-                        e.stopPropagation();
-                        item.value = parseInt(e.target.value, 10);
-                        valDisplay.textContent = `${item.value}${item.unit || ''}`;
-                        onInteraction(item.id, item.value);
-                    };
+            } else if (item.type === 'slider') {
+                const slider = itemEl.querySelector('input');
+                const valDisplay = itemEl.querySelector('.slider-val');
+                let sliderTimer = null;
+                const pushSlider = () => {
+                    valDisplay.textContent = `${item.value}${item.unit || ''}`;
+                    onInteraction(item.id, item.value);
+                };
+                slider.oninput = (e) => {
+                    e.stopPropagation();
+                    item.value = parseInt(e.target.value, 10);
+                    valDisplay.textContent = `${item.value}${item.unit || ''}`;
+                    clearTimeout(sliderTimer);
+                    sliderTimer = setTimeout(pushSlider, 180);
+                };
+                slider.onchange = (e) => {
+                    e.stopPropagation();
+                    item.value = parseInt(e.target.value, 10);
+                    clearTimeout(sliderTimer);
+                    pushSlider();
+                };
                 } else if (item.type === 'cycle') {
                     itemEl.style.cursor = 'pointer';
                     itemEl.onclick = (e) => {
@@ -385,14 +397,12 @@ function setupEvents() {
         item.onclick = (e) => {
             e.preventDefault();
             const navId = item.getAttribute('data-category');
-            const secId = sectionIdForNav(navId);
             currentCategory = navId;
             document.querySelectorAll('.nav-item').forEach(n => {
                 n.classList.toggle('active', n.getAttribute('data-category') === navId);
             });
             renderAll();
             setupObservers();
-            onInteraction('__sol_refresh', navId);
         };
     });
 
@@ -403,15 +413,23 @@ function setupEvents() {
     };
 }
 
+let _solRelayLastAt = 0;
+let _solRelayPending = null;
+let _solRelayTimer = null;
+
 function onInteraction(id, val) {
+    if (id === '__sol_refresh') return;
     const payload = { id: id, value: val, action: 'interaction' };
-    const bridge = document.getElementById('sol-bridge');
-    if (bridge) {
-        bridge.textContent = 'SOLARIS_NUI::' + Date.now() + '::' + JSON.stringify(payload);
-    }
-    if (typeof solClipboardRelay === 'function') {
-        solClipboardRelay(payload);
-    }
+    _solRelayPending = payload;
+    const now = Date.now();
+    const wait = Math.max(0, 140 - (now - _solRelayLastAt));
+    clearTimeout(_solRelayTimer);
+    _solRelayTimer = setTimeout(function () {
+        if (!_solRelayPending) return;
+        _solRelayLastAt = Date.now();
+        solClipboardRelay(_solRelayPending);
+        _solRelayPending = null;
+    }, wait);
 }
 
 function showNotify(msg) {
@@ -728,14 +746,4 @@ function solClipboardRelay(payload) {
     } catch(e) {}
 }
 
-const originalOnInteraction = window.onInteraction;
-window.onInteraction = function(id, val) {
-    if (originalOnInteraction) originalOnInteraction(id, val);
-    
-    const payload = {
-        id: id,
-        value: val,
-        action: 'interaction'
-    };
-    solClipboardRelay(payload);
-}
+window.onInteraction = onInteraction;
