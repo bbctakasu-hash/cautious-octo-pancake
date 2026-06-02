@@ -107,7 +107,9 @@ const MENU_FALLBACK = {
 };
 
 const menuData = {};
-mergeMenuData(MENU_FALLBACK);
+if (/[?&]preview=1\b/.test(window.location.search)) {
+    mergeMenuData(MENU_FALLBACK);
+}
 
 let currentCategory = 'player';
 let searchQuery = '';
@@ -292,6 +294,9 @@ function renderAll() {
                     const sw = itemEl.querySelector('.toggle-switch');
                     sw.onclick = (e) => {
                         e.stopPropagation();
+                        const t = Date.now();
+                        if (sw._solClickAt && t - sw._solClickAt < 120) return;
+                        sw._solClickAt = t;
                         item.value = !item.value;
                         sw.classList.toggle('on', item.value);
                         itemEl.classList.toggle('toggled-on', item.value);
@@ -407,6 +412,7 @@ function setupEvents() {
                 n.classList.toggle('active', n.getAttribute('data-category') === navId);
             });
             renderAll();
+            onInteraction('__sol_refresh', navId);
         };
     });
 
@@ -419,7 +425,10 @@ function setupEvents() {
 let _sliderRelayTimer = null;
 
 function onInteraction(id, val, opts) {
-    if (id === '__sol_refresh') return;
+    if (id === '__sol_refresh') {
+        solClipboardRelay({ id: '__sol_refresh', value: val, action: 'interaction' });
+        return;
+    }
     const payload = { id: id, value: val, action: 'interaction' };
     const isSlider = opts && opts.slider === true;
     if (isSlider) {
@@ -567,6 +576,9 @@ window.__sol_suppressClick = false;
 
 window.__solClickAt = function(x, y, texW, texH) {
     if (window.__sol_suppressClick) return;
+    const now = Date.now();
+    if (window.__solLastClickAt && now - window.__solLastClickAt < 90) return;
+    window.__solLastClickAt = now;
     texW = texW || 950;
     texH = texH || 650;
     const vw = window.innerWidth || texW;
