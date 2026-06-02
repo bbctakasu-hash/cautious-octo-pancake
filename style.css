@@ -570,14 +570,6 @@ body.dui-mode #snow-canvas {
     display: none;
 }
 
-body.dui-boot {
-    display: none;
-}
-
-body.dui-mode.dui-boot {
-    display: flex;
-}
-
 /* ── In-game DUI: fill the texture; Lua DrawSprite scales on screen ── */
 html.dui-mode {
     width: 100%;

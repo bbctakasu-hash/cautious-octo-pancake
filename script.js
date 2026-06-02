@@ -595,8 +595,16 @@ function handleSolarisMessage(data) {
         const show = data.visible === true;
         document.documentElement.classList.add("dui-mode");
         document.body.classList.add("dui-mode");
-        document.body.classList.toggle("dui-boot", show);
+        document.body.classList.remove("dui-boot");
         document.body.style.display = show ? "flex" : "none";
+        document.body.style.visibility = show ? "visible" : "hidden";
+        document.body.style.opacity = show ? "1" : "0";
+        var wrap = document.querySelector(".menu-wrapper");
+        if (wrap) {
+            wrap.style.display = "flex";
+            wrap.style.visibility = "visible";
+            wrap.style.opacity = "1";
+        }
         return;
     }
 
@@ -640,6 +648,7 @@ window.handleDuiMessage = function (raw) {
 if (!/[?&]preview=1\b/.test(window.location.search) && window.location.protocol !== "file:") {
     document.documentElement.classList.add("dui-mode");
     document.body.classList.add("dui-mode");
+    document.body.style.display = "none";
     applyDisplayScale(1, 1);
 }
 
