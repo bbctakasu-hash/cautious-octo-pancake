@@ -607,11 +607,11 @@ body.dui-mode .content-grid {
     text-rendering: optimizeLegibility;
 }
 
-/* ── In-game DUI: fill the texture; Lua DrawSprite scales on screen ── */
+/* ── In-game DUI: fixed px sizes (readable, not tiny vmin) ── */
 html.dui-mode {
     width: 100%;
     height: 100%;
-    font-size: clamp(11px, 1.45vmin, 16px);
+    font-size: 16px;
 }
 
 body.dui-mode {
@@ -637,61 +637,94 @@ body.dui-mode .menu-wrapper {
 }
 
 body.dui-mode .sidebar {
-    width: clamp(168px, 24%, 260px);
-    padding: clamp(16px, 3.2vmin, 32px) 0;
+    width: 220px;
+    padding: 28px 0;
     flex-shrink: 0;
 }
 
 body.dui-mode .sidebar-brand {
-    padding: 0 clamp(14px, 2.8vmin, 28px);
-    margin-bottom: clamp(20px, 4vmin, 40px);
-    font-size: clamp(18px, 2.8vmin, 26px);
+    padding: 0 24px;
+    margin-bottom: 32px;
+    font-size: 24px;
 }
 
 body.dui-mode .nav-section-title {
-    padding: 0 clamp(14px, 2.8vmin, 28px);
-    font-size: clamp(8px, 1.1vmin, 10px);
+    padding: 0 24px;
+    font-size: 10px;
 }
 
 body.dui-mode .nav-item {
-    padding: 0 clamp(14px, 2.8vmin, 28px);
-    height: clamp(34px, 4.8vmin, 44px);
-    font-size: clamp(12px, 1.55vmin, 14px);
-    gap: clamp(10px, 1.5vmin, 16px);
+    padding: 0 24px;
+    height: 40px;
+    font-size: 15px;
+    gap: 14px;
+}
+
+body.dui-mode .nav-item i {
+    font-size: 15px;
 }
 
 body.dui-mode .main-content {
-    padding: clamp(14px, 3vmin, 32px);
+    padding: 24px 28px;
     min-width: 0;
 }
 
 body.dui-mode .search-box {
-    width: min(320px, 100%);
+    width: 280px;
     max-width: 100%;
     flex-shrink: 1;
+    font-size: 14px;
+}
+
+body.dui-mode .search-box input {
+    font-size: 14px;
 }
 
 body.dui-mode .content-grid {
-    gap: clamp(14px, 2.5vmin, 28px);
+    gap: 20px;
 }
 
 body.dui-mode .category-section {
     grid-template-columns: repeat(2, 1fr);
-    gap: clamp(10px, 1.6vmin, 15px);
+    gap: 14px;
 }
 
-/* Player tab: General tall left, Powers + Movement stacked right */
+body.dui-mode .category-header span {
+    font-size: 13px;
+}
+
 body.dui-mode .category-section[data-category="player"] .tile:first-child {
     grid-row: span 2;
 }
 
+body.dui-mode .tile {
+    padding: 16px;
+    gap: 12px;
+}
+
+body.dui-mode .tile-header span {
+    font-size: 14px;
+}
+
 body.dui-mode .function-item {
-    padding: clamp(12px, 1.8vmin, 18px);
+    padding: 10px 0;
+    min-height: 36px;
+}
+
+body.dui-mode .function-label {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+body.dui-mode .toggle-switch {
+    width: 42px;
+    height: 22px;
 }
 
 body.dui-mode .top-bar {
     flex-wrap: wrap;
-    gap: clamp(8px, 1.2vmin, 14px);
+    gap: 12px;
+    margin-bottom: 8px;
 }
 
 .menu-loading {

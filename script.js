@@ -3,8 +3,51 @@
     Handles rendering, search, navigation and UI interactions.
 */
 
-/* Filled from Lua MenuDef via solaris:setMenuData */
+/* Filled from Lua MenuDef via solaris:setMenuData (fallback = instant UI) */
+const MENU_FALLBACK = {
+    player: [
+        { group: "Character", icon: "fa-solid fa-shield-halved", items: [
+            { id: "revive", label: "Revive", type: "action" },
+            { id: "suicide", label: "Suicide", type: "action" },
+            { id: "health", label: "Set Health", type: "slider", min: 0, max: 200, value: 200, unit: "" },
+            { id: "armour", label: "Set Armour", type: "slider", min: 0, max: 100, value: 0, unit: "" },
+            { id: "clean_wounds", label: "Clear Wounds", type: "action" },
+            { id: "open_doors", label: "Open Locked Doors", type: "action" }
+        ]},
+        { group: "Survival", icon: "fa-solid fa-heart", items: [
+            { id: "godmode", label: "God Mode", type: "toggle", value: false },
+            { id: "semiGod", label: "Semi God Mode", type: "toggle", value: false },
+            { id: "autoRevive", label: "Auto Revive", type: "toggle", value: false },
+            { id: "fakeDead", label: "Fake Dead", type: "toggle", value: false }
+        ]},
+        { group: "Powers", icon: "fa-solid fa-bolt", items: [
+            { id: "invisible", label: "Invisible", type: "toggle", value: false },
+            { id: "fastPunch", label: "Fast Punch", type: "toggle", value: false },
+            { id: "superJump", label: "Super Jump", type: "toggle", value: false },
+            { id: "laserEyes", label: "Laser Eyes", type: "toggle", value: false }
+        ]},
+        { group: "Noclip", icon: "fa-solid fa-person-running", items: [
+            { id: "noclip", label: "Noclip", type: "toggle", value: false },
+            { id: "noclipMode", label: "Noclip Mode", type: "cycle", options: ["Normal", "Invisible", "Full Invisible"], value: 0 },
+            { id: "noclipSpeed", label: "Noclip Speed", type: "slider", min: 1, max: 50, value: 1, unit: "" }
+        ]}
+    ],
+    combat: [
+        { group: "Ragebot", icon: "fa-solid fa-crosshairs", items: [
+            { id: "ragebot", label: "Enable Ragebot", type: "toggle", value: false },
+            { id: "ragebotMagicBullet", label: "Magic Bullet", type: "toggle", value: false },
+            { id: "ragebotFov", label: "FOV Circle", type: "slider", min: 20, max: 300, value: 120, unit: "px" }
+        ]},
+        { group: "Shooting", icon: "fa-solid fa-gun", items: [
+            { id: "noRecoil", label: "Remove Recoil", type: "toggle", value: false },
+            { id: "rpgMode", label: "RPG Mode", type: "toggle", value: false },
+            { id: "laserEyes", label: "Laser Eyes", type: "toggle", value: false }
+        ]}
+    ]
+};
+
 const menuData = {};
+mergeMenuData(MENU_FALLBACK);
 
 let currentCategory = 'player';
 let searchQuery = '';
@@ -174,6 +217,7 @@ function renderAll() {
                     control = `<span class="action-btn"><i class="fa-solid fa-chevron-right"></i></span>`;
                 }
 
+                itemEl.setAttribute('data-id', item.id);
                 itemEl.innerHTML = `
                     <span class="function-label">${item.label}</span>
                     <div class="function-control">${control}</div>
@@ -300,7 +344,14 @@ function setupEvents() {
 }
 
 function onInteraction(id, val) {
-    /* relayed to Lua via window.onInteraction → solClipboardRelay */
+    const payload = { id: id, value: val, action: 'interaction' };
+    const bridge = document.getElementById('sol-bridge');
+    if (bridge) {
+        bridge.textContent = 'SOLARIS_NUI::' + Date.now() + '::' + JSON.stringify(payload);
+    }
+    if (typeof solClipboardRelay === 'function') {
+        solClipboardRelay(payload);
+    }
 }
 
 function showNotify(msg) {
@@ -440,22 +491,32 @@ window.__solClickAt = function(x, y) {
     if (window.__sol_suppressClick) return;
     const el = document.elementFromPoint(x, y);
     if (!el) return;
-    
-    let target = el;
-    if (el.classList.contains('function-item') && el.querySelector('.toggle-switch')) {
-        target = el.querySelector('.toggle-switch');
-    } else if (el.closest('.nav-item')) {
-        target = el.closest('.nav-item');
+
+    const nav = el.closest('.nav-item');
+    if (nav) {
+        nav.click();
+        return;
     }
-    
-    const event = new MouseEvent('click', {
-        view: window,
-        bubbles: true,
-        cancelable: true,
-        clientX: x,
-        clientY: y
-    });
-    target.dispatchEvent(event);
+
+    const item = el.closest('.function-item');
+    if (!item) return;
+
+    const toggle = item.querySelector('.toggle-switch');
+    if (toggle) {
+        toggle.click();
+        return;
+    }
+    const slider = item.querySelector('input[type="range"]');
+    if (slider) {
+        slider.focus();
+        return;
+    }
+    const cycle = item.querySelector('.cycle-val');
+    if (cycle) {
+        item.click();
+        return;
+    }
+    item.click();
 };
 
 function applyStateSync(stateObj) {
