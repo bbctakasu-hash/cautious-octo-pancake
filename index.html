@@ -4,2385 +4,2128 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Solaris Menu</title>
-    <style>
-/* System fonts in-game (no Google Fonts CDN = faster load, sharper DUI text). */
-
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
 :root {
-    --theme: 15, 98, 254;
-    --bg: 0, 0, 0;
-    --surface: 5, 5, 5;
-    --text-primary: #ffffff;
-    --text-secondary: #E2E8F0;
-    --text-muted: #64748b;
-    --radius: 14px;
-    --item-radius: 10px;
-    --glow-soft: 0 0 40px -8px rgba(var(--theme), 0.3);
-    --glow-strong: 0 0 60px -5px rgba(var(--theme), 0.45);
-    /* Panel ~85% solid; selector highlight ~80% transparent (20% fill) */
-    --menu-alpha: 0.85;
-    --panel-bg: rgba(10, 12, 16, var(--menu-alpha));
-    --panel-bg-soft: rgba(8, 10, 14, 0.85);
-    --panel-footer: rgba(6, 8, 12, 0.88);
-    --divider: rgba(3, 123, 252, 0.28);
-    /* Row fill ~80% transparent; accent bars stay vivid blue */
-    --sel-left: rgba(4, 23, 89, 0.48);
-    --sel-mid: rgba(2, 12, 44, 0.4);
-    --sel-deep: rgba(1, 6, 20, 0.32);
-    --sel-right: rgba(0, 0, 0, 0.22);
-    --sel-bar: rgb(3, 123, 252);
-    --sel-top-bar: rgb(0, 102, 204);
-    --sel-glow: 0 0 12px rgba(0, 85, 255, 0.35), 0 0 22px rgba(3, 123, 252, 0.18);
-    --sel-glow-soft: 0 0 10px rgba(3, 123, 252, 0.28);
+    --accent: #00b585; /* Solaris Teal */
+    --accent-rgb: 0, 181, 133;
+    --accent-bright: #00e0a5;
+    --bg-main: rgba(8, 8, 10, 0.96);
+    --bg-sidebar: rgba(12, 12, 15, 0.9);
+    --bg-tile: rgba(22, 22, 28, 0.6);
+    --bg-hover: rgba(255, 149, 0, 0.04);
+    --text-high: #ffffff;
+    --text-mid: #94a3b8;
+    --text-low: #475569;
+    --font-ui: 'Inter', sans-serif;
+    --font-logo: 'Outfit', sans-serif;
+    --border: 1px solid rgba(255, 255, 255, 0.04);
+    --radius: 8px;
 }
 
-/* No external font CDN in DUI — blocks load for 30s+ in-game */
-
-body, html {
+* {
+    box-sizing: border-box;
     margin: 0;
     padding: 0;
-    width: 100%;
-    height: 100vh;
-    font-family: 'Google Sans', 'Product Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
-    background: transparent;
-    overflow: hidden;
+    font-family: var(--font-ui);
     user-select: none;
-    -webkit-user-select: none;
+    -webkit-user-drag: none;
 }
 
-/* In-game (DUI) mode keeps the page transparent so only the panel renders.
-   The `.standalone` class is added by script.js when opened directly in a
-   browser, restoring the ambient backdrop for previewing. */
-body.standalone {
-    background: #050308;
-    background-image:
-        radial-gradient(ellipse at 20% 50%, rgba(var(--theme), 0.06) 0%, transparent 60%),
-        radial-gradient(ellipse at 80% 30%, rgba(120, 10, 10, 0.05) 0%, transparent 50%);
-}
+::-webkit-scrollbar { display: none; }
+* { -ms-overflow-style: none; scrollbar-width: none; }
 
-/* In-game DUI: only the panel is visible; rest of the texture must stay clear */
-html, body,
-html.dui-mode,
-body.dui-mode {
-    background: transparent !important;
-    background-color: transparent !important;
-    width: 100%;
-    height: 100%;
-}
-body.dui-mode .menu-container.hidden {
-    transform: none;
-    opacity: 0;
-    pointer-events: none;
-    transition: none;
-}
-body.dui-mode .menu-container {
-    top: 0;
-    left: 0;
-    width: 100%;
-    max-width: none;
-    font-size: 15px;
-    animation: none;
-    opacity: 1 !important;
-    transform: none !important;
-    -webkit-font-smoothing: antialiased;
-    text-rendering: geometricPrecision;
-}
-body.dui-mode .menu-container:not(.hidden) {
-    transform: none !important;
-    pointer-events: none;
-    transition: none;
-}
-body.dui-mode .watermark-container {
-    display: none !important;
-}
-body.dui-mode .menu-viewport {
-    transition: none !important;
-}
-
-/* Hidden state — Lua toggles this via the bridge */
-.menu-container.hidden {
-    opacity: 0;
-    transform: scale(0.96) translateY(12px);
-    pointer-events: none;
-}
-
-/* ───────── Container ───────── */
-.menu-container {
-    position: absolute;
-    top: 10vh;
-    left: 10vw;
-    width: 440px;
-    border-radius: 8px;
-    background: var(--panel-bg);
-    border: none;
-    box-shadow: none;
-    outline: none;
-    overflow: visible;
-    color: var(--text-primary);
+body {
+    background-color: transparent;
+    height: 100vh;
+    width: 100vw;
     display: flex;
-    flex-direction: column;
-    animation: menuAppear 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    transform-origin: top center;
-    transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1),
-                transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(circle at 0% 0%, rgba(var(--accent-rgb), 0.05), transparent 45%),
+                radial-gradient(circle at 100% 100%, rgba(var(--accent-rgb), 0.04), transparent 45%),
+                transparent;
+    z-index: -1;
+}
+
+.menu-wrapper {
+    width: 960px;
+    height: 660px;
+    background: var(--bg-main);
+    border: var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: 0 60px 120px -30px rgba(0, 0, 0, 1),
+                0 0 60px rgba(0, 0, 0, 0.6);
+    display: flex;
+    animation: menuAppear 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes menuAppear {
-    0% { opacity: 0; transform: scale(0.96) translateY(12px); }
-    100% { opacity: 1; transform: scale(1) translateY(0); }
+    from { opacity: 0; transform: scale(0.97) translateY(20px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-/* ───────── Banner (CSS only — no external image; works in DUI + Cloudflare) ───────── */
-.header-banner {
-    width: 100%;
-    height: 100px;
-    min-height: 88px;
-    background:
-        radial-gradient(130% 150% at 0% 0%, rgba(var(--theme), 0.55) 0%, transparent 55%),
-        radial-gradient(120% 140% at 100% 0%, rgba(var(--theme), 0.22) 0%, transparent 52%),
-        linear-gradient(135deg, rgba(var(--theme), 0.28) 0%, rgba(8, 10, 18, 0.92) 72%);
-    background-size: cover;
-    background-position: center;
-    position: relative;
-    border-radius: 8px 8px 0 0;
-    overflow: hidden;
-}
-
-.header-banner::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 58%;
-    background: linear-gradient(to top, rgba(6, 8, 14, 0.88) 0%, rgba(6, 8, 14, 0.35) 50%, transparent 100%);
-    pointer-events: none;
-}
-
-/* Thin section separators (banner / tabs / list / footer) */
-.menu-divider {
-    flex-shrink: 0;
-    height: 1px;
-    width: 100%;
-    background: linear-gradient(
-        90deg,
-        rgba(3, 123, 252, 0.05) 0%,
-        var(--divider) 18%,
-        rgba(255, 255, 255, 0.14) 50%,
-        var(--divider) 82%,
-        rgba(3, 123, 252, 0.05) 100%
-    );
-}
-
-/* ───────── Tabs ───────── */
-.tabs {
+.menu-container {
     display: flex;
-    padding: 0;
-    background: var(--panel-bg);
-    position: relative;
-    z-index: 6;
-}
-
-.tab {
-    flex: 1;
-    text-align: center;
-    padding: 10px 6px;
-    font-size: 12.5px;
-    font-weight: 700;
-    color: #94a3b8;
-    cursor: pointer;
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
-    background: rgba(0, 0, 0, 0.4);
-    transition: color 0.15s ease, background 0.15s ease;
-    position: relative;
-    z-index: 1;
-}
-
-.tab:not(:last-child) {
-    border-right: 1px solid rgba(255, 255, 255, 0.07);
-}
-
-.tab:hover {
-    color: #ffffff;
-    background: rgba(10, 16, 32, 0.5);
-}
-
-/* Active tab — white label + short centered bar under text (reference style) */
-.tab.active {
-    color: #ffffff;
-    background: rgba(0, 0, 0, 0.4);
-    box-shadow: none;
-}
-
-.tab.active::after {
-    content: '';
-    position: absolute;
-    left: 50%;
-    bottom: 5px;
-    transform: translateX(-50%);
-    width: 58%;
-    min-width: 52px;
-    max-width: 78%;
-    height: 2px;
-    background: linear-gradient(90deg, rgba(0, 102, 204, 0.2), var(--sel-top-bar) 50%, rgba(0, 102, 204, 0.2));
-    box-shadow: 0 0 8px rgba(3, 123, 252, 0.7);
-    border-radius: 1px;
-}
-
-/* ───────── Content ───────── */
-.content {
-    padding: 0;
-    position: relative;
-    flex: 0 0 auto;
-    overflow: visible;
-}
-
-.content-main {
-    position: relative;
     width: 100%;
+    height: 100%;
 }
 
-.menu-viewport {
-    position: relative;
-    z-index: 1;
-    width: 100%;
-    flex: 0 0 auto;
-    transform-origin: top center;
-    overflow: hidden;
-    margin: 0;
-    transition: height 0.2s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-/* Category swap — fast + heavy (~0.4s); list only, selector stays fixed */
-.menu-viewport.page-out-forward {
-    animation: menuPageOutForward 0.085s cubic-bezier(0.85, 0, 1, 0.15) forwards;
-}
-
-.menu-viewport.page-out-backward {
-    animation: menuPageOutBackward 0.085s cubic-bezier(0.85, 0, 1, 0.15) forwards;
-}
-
-.menu-viewport.page-in-forward {
-    animation: menuPageInForward 0.32s cubic-bezier(0.14, 1.25, 0.34, 1) forwards;
-}
-
-.menu-viewport.page-in-backward {
-    animation: menuPageInBackward 0.32s cubic-bezier(0.14, 1.25, 0.34, 1) forwards;
-}
-
-.menu-viewport.page-in-forward .menu-item,
-.menu-viewport.page-in-backward .menu-item {
-    animation: menuItemIn 0.28s cubic-bezier(0.2, 1, 0.4, 1) backwards;
-}
-
-.menu-viewport.page-in-forward .menu-item:nth-child(1),
-.menu-viewport.page-in-backward .menu-item:nth-child(1) { animation-delay: 0.02s; }
-.menu-viewport.page-in-forward .menu-item:nth-child(2),
-.menu-viewport.page-in-backward .menu-item:nth-child(2) { animation-delay: 0.03s; }
-.menu-viewport.page-in-forward .menu-item:nth-child(3),
-.menu-viewport.page-in-backward .menu-item:nth-child(3) { animation-delay: 0.04s; }
-.menu-viewport.page-in-forward .menu-item:nth-child(4),
-.menu-viewport.page-in-backward .menu-item:nth-child(4) { animation-delay: 0.05s; }
-.menu-viewport.page-in-forward .menu-item:nth-child(5),
-.menu-viewport.page-in-backward .menu-item:nth-child(5) { animation-delay: 0.06s; }
-.menu-viewport.page-in-forward .menu-item:nth-child(n+6),
-.menu-viewport.page-in-backward .menu-item:nth-child(n+6) { animation-delay: 0.07s; }
-
-@keyframes menuPageOutForward {
-    to {
-        transform: translateX(-22px) scale(0.97);
-        opacity: 0;
-        filter: blur(5px);
-    }
-}
-
-@keyframes menuPageOutBackward {
-    to {
-        transform: translateX(22px) scale(0.97);
-        opacity: 0;
-        filter: blur(5px);
-    }
-}
-
-@keyframes menuPageInForward {
-    from {
-        transform: translateX(28px) scale(0.965);
-        opacity: 0;
-        filter: blur(6px);
-    }
-    to {
-        transform: translateX(0) scale(1);
-        opacity: 1;
-        filter: blur(0);
-    }
-}
-
-@keyframes menuPageInBackward {
-    from {
-        transform: translateX(-28px) scale(0.965);
-        opacity: 0;
-        filter: blur(6px);
-    }
-    to {
-        transform: translateX(0) scale(1);
-        opacity: 1;
-        filter: blur(0);
-    }
-}
-
-@keyframes menuItemIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-/* Floating selector — outside animated viewport so it never rides the transition */
-.menu-selector {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
-    height: 48px;
-    z-index: 0;
-    pointer-events: none;
-    opacity: 0;
-    box-sizing: border-box;
-    border-radius: 0;
-    background: linear-gradient(
-        90deg,
-        var(--sel-left) 0%,
-        var(--sel-mid) 38%,
-        var(--sel-deep) 62%,
-        var(--sel-right) 100%
-    );
-    box-shadow: var(--sel-glow), inset 0 0 14px rgba(3, 123, 252, 0.08);
-}
-
-/* Thin washed bars sit OUTSIDE the row (original layout) */
-.menu-selector::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: -11px;
-    height: 11px;
-    pointer-events: none;
-    background: linear-gradient(
-        180deg,
-        rgba(0, 102, 204, 0) 0%,
-        rgba(0, 102, 204, 0.18) 40%,
-        rgba(0, 102, 204, 0.65) 88%,
-        var(--sel-top-bar) 100%
-    );
-}
-
-.menu-selector::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: -11px;
-    height: 11px;
-    pointer-events: none;
-    background: linear-gradient(
-        0deg,
-        rgba(3, 123, 252, 0) 0%,
-        rgba(3, 123, 252, 0.2) 45%,
-        rgba(3, 123, 252, 0.7) 85%,
-        var(--sel-bar) 100%
-    );
-}
-
-/* ─── External left scrollbar (outside panel, rounded pill) ─── */
-.scroll-track {
+/* --- SIDEBAR --- */
+.sidebar {
+    width: 200px;
+    min-width: 200px;
+    background: var(--bg-sidebar);
+    border-right: var(--border);
     display: flex;
     flex-direction: column;
-    align-items: stretch;
-    width: 12px;
+    padding: 28px 0;
+}
+
+.sidebar-brand {
+    padding: 0 26px;
+    margin-bottom: 35px;
+    font-family: var(--font-logo);
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -1px;
+}
+
+.brand-main {
+    background: linear-gradient(135deg, #fff 0%, #aaa 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.brand-sub {
+    color: var(--accent);
+    margin-left: 1px;
+    text-shadow: 0 0 20px rgba(var(--accent-rgb), 0.6),
+                 0 0 40px rgba(var(--accent-rgb), 0.2);
+}
+
+.sidebar-nav {
+    flex-grow: 1;
+    overflow-y: auto;
+    position: relative;
+    padding-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.nav-section { margin-bottom: 18px; }
+
+.nav-section-title {
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--text-low);
+    padding: 0 26px;
+    margin-bottom: 8px;
+    letter-spacing: 1.5px;
+    opacity: 0.6;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 0 26px;
+    height: 38px;
+    color: var(--text-mid);
+    text-decoration: none;
+    font-size: 13.5px;
+    font-weight: 600;
+    transition: color 0.3s ease, background 0.3s ease;
+    position: relative;
+    cursor: pointer;
+}
+
+.nav-item i {
+    width: 18px;
+    text-align: center;
+    font-size: 14px;
+    opacity: 0.6;
+    transition: color 0.3s ease, opacity 0.3s ease, transform 0.3s ease;
+}
+
+.nav-item:hover { color: var(--text-high); }
+.nav-item:hover i { transform: scale(1.1); }
+
+.nav-item.active {
+    color: var(--text-high);
+    background: rgba(var(--accent-rgb), 0.08);
+}
+
+.sidebar-indicator {
     position: absolute;
-    right: calc(100% + 12px);
-    top: 0;
-    min-height: 48px;
-    box-sizing: border-box;
-    border-radius: 10px;
-    overflow: hidden;
+    left: 0;
+    width: 2px;
+    background: var(--accent);
+    box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.6),
+                0 0 20px rgba(var(--accent-rgb), 0.2);
+    transition: top 0.35s cubic-bezier(0.16, 1, 0.3, 1), height 0.35s cubic-bezier(0.16, 1, 0.3, 1);
     pointer-events: none;
     z-index: 5;
-    background: linear-gradient(
-        180deg,
-        var(--sel-left) 0%,
-        var(--sel-mid) 45%,
-        var(--sel-deep) 70%,
-        var(--sel-right) 100%
-    );
-    box-shadow: var(--sel-glow-soft), inset 0 0 10px rgba(3, 123, 252, 0.06);
 }
 
-.scroll-track-inner {
-    position: relative;
-    flex: 1 1 auto;
-    min-height: 32px;
-    margin: 16px 2px;
-    border-radius: 8px;
-    overflow: hidden;
+.nav-item.active i {
+    color: var(--accent);
+    opacity: 1;
+    text-shadow: 0 0 10px rgba(var(--accent-rgb), 0.4);
 }
 
-.scroll-arrow-top,
-.scroll-arrow-bottom {
-    position: absolute;
-    left: 0;
-    right: 0;
-    width: auto;
-    text-align: center;
-    font-size: 8px;
-    line-height: 1;
-    color: rgba(3, 123, 252, 0.85);
-    pointer-events: none;
-    z-index: 2;
-}
+.nav-spacer { flex: 1; }
 
-.scroll-arrow-top { top: 2px; }
-.scroll-arrow-bottom { bottom: 2px; }
-
-.scroll-thumb {
-    position: absolute;
-    left: 1px;
-    right: 1px;
-    width: auto;
-    min-height: 20px;
-    background: linear-gradient(
-        180deg,
-        var(--sel-left) 0%,
-        var(--sel-mid) 50%,
-        var(--sel-right) 100%
-    );
-    border-radius: 8px;
-    box-shadow: var(--sel-glow-soft);
-    transition: top 0.08s linear, height 0.1s ease;
-    z-index: 1;
-}
-
-
-.scroll-track.is-idle .scroll-thumb {
-    top: 0 !important;
-    height: 100% !important;
-    opacity: 0.35;
-}
-
-.menu-list {
+/* --- MAIN CONTENT --- */
+.main-content {
+    flex-grow: 1;
     display: flex;
     flex-direction: column;
-    gap: 0;
-    width: 100%;
-    height: auto;
-    max-height: none;
-    min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 2px 0;
-    margin: 0;
-    position: relative;
-    z-index: 1;
-    transition: height 0.2s cubic-bezier(0.22, 1, 0.36, 1);
-    flex-shrink: 0;
+    overflow: hidden;
+    background: radial-gradient(circle at top right, rgba(var(--accent-rgb), 0.02), transparent 50%);
 }
 
-/* Scrollbar */
-.menu-list::-webkit-scrollbar { display: none; }
-.menu-list { -ms-overflow-style: none; scrollbar-width: none; }
-
-/* ───────── Menu Items ───────── */
-.menu-item {
+/* --- TOP BAR: sub-tabs + search --- */
+.top-bar {
     display: flex;
     align-items: center;
-    box-sizing: border-box;
-    width: 100%;
-    height: 48px;
+    padding: 14px 28px;
+    border-bottom: var(--border);
     flex-shrink: 0;
-    padding: 0 20px;
-    margin: 0;
-    cursor: pointer;
-    border: none;
-    background: transparent;
-    position: relative;
-    z-index: 1;
-    isolation: isolate;
-    overflow: visible;
-    background: transparent !important;
-    box-shadow: none !important;
-    transition: color 0.16s ease;
+    gap: 10px;
 }
 
-/* ─── Item Icon ─── */
-.item-icon {
-    display: inline-flex;
+.sub-tabs {
+    display: flex;
     align-items: center;
-    justify-content: center;
-    width: 28px;
-    margin-right: 14px;
-    color: var(--text-muted);
-    transition: color 0.18s ease;
-    z-index: 2;
-    flex-shrink: 0;
-}
-
-.item-icon svg.menu-svg-icon {
-    width: 20px;
-    height: 20px;
-    transition: transform 0.14s ease, color 0.18s ease;
-}
-
-.menu-item .item-name {
+    gap: 6px;
     flex: 1;
-    font-size: 15.2px;
-    font-weight: 600;
-    color: var(--text-secondary);
-    transition: color 0.18s ease;
-    z-index: 2;
-    letter-spacing: 0.2px;
 }
 
-.menu-item .item-arrow {
-    display: inline-flex;
+.sub-tab {
+    display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 8px;
+    padding: 7px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-mid);
+    cursor: pointer;
+    border-radius: 6px;
+    transition: color 0.25s ease, background 0.25s ease;
+}
+
+.sub-tab i { font-size: 12px; opacity: 0.6; }
+
+.sub-tab:hover { color: var(--text-high); background: rgba(255,255,255,0.03); }
+
+.sub-tab.active {
+    color: var(--text-high);
+    background: rgba(var(--accent-rgb), 0.1);
+}
+
+.sub-tab.active i { color: var(--accent); opacity: 1; }
+
+.search-box {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 7px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 200px;
+    transition: all 0.3s;
     flex-shrink: 0;
-    min-width: 20px;
-    font-size: 18px;
+}
+
+.search-box:focus-within {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(var(--accent-rgb), 0.3);
+}
+
+.search-box i { font-size: 13px; color: var(--text-low); }
+
+.search-box input {
+    background: none;
+    border: none;
+    color: var(--text-high);
+    font-family: inherit;
+    font-size: 13px;
+    outline: none;
+    width: 100%;
+}
+
+/* --- CONTENT GRID --- */
+.content-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    align-content: flex-start;
+    overflow-y: auto;
+    overflow-x: hidden;
+    flex: 1;
+    padding: 20px 28px;
+}
+
+/* --- Tab transition --- */
+.content-grid.grid-exit {
+    animation: gridFadeOut 0.12s ease forwards;
+    pointer-events: none;
+}
+
+.content-grid.grid-enter {
+    animation: gridFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes gridFadeOut { from { opacity: 1; } to { opacity: 0; } }
+@keyframes gridFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* --- Tile animations --- */
+.tile-entry-anim {
+    opacity: 0;
+    animation: tileSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes tileSlideIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.item-entry-anim {
+    opacity: 0;
+    animation: itemReveal 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes itemReveal {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* --- TILE --- */
+.tile {
+    background: rgba(14, 14, 17, 0.7);
+    border: var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    height: fit-content;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+.tile-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13.5px;
     font-weight: 700;
-    line-height: 1;
-    color: #94a3b8;
-    opacity: 0.65;
-    z-index: 2;
-    transition: color 0.18s ease, opacity 0.18s ease;
+    color: var(--text-high);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    padding-bottom: 9px;
+    margin-bottom: 3px;
 }
 
-.menu-item .item-arrow.item-arrow--dim {
-    opacity: 0.32;
+.tile-icon { color: var(--accent); font-size: 13px; }
+
+.tile-items {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
-/* ─── Hover (subtle — no row scale) ─── */
-.menu-item:not(.active):hover {
-    background: rgba(var(--theme), 0.04);
-}
-.menu-item:not(.active):hover .item-name { color: #ccc; }
-.menu-item:not(.active):hover .item-arrow { opacity: 0.85; }
-.menu-item:not(.active):hover .item-icon { color: #999; }
-.menu-item:not(.active):hover .item-icon svg.menu-svg-icon {
-    transform: scale(1.02);
-}
-
-/* Active row — text highlight only (bar is .menu-selector) */
-.menu-item.active::before,
-.menu-item.active::after {
-    display: none !important;
-    content: none !important;
-}
-
-.menu-item.active {
-    z-index: 2;
-}
-
-.menu-item.active .item-icon,
-.menu-item.active .item-name,
-.menu-item.active .item-arrow,
-.menu-item.active .item-name-wrap,
-.menu-item.active .toggle-switch,
-.menu-item.active .slider-container,
-.menu-item.active .array-container,
-.menu-item.active .bind-badge,
-.menu-item.active .keybind-badge,
-.menu-item.active .info-value,
-.menu-item.active .color-preview {
-    position: relative;
-    z-index: 3;
-}
-
-.menu-item.active .item-icon {
-    color: #fff;
-    filter: none;
-}
-
-.menu-item.active .item-name {
-    color: #fff;
-    font-weight: 500;
-    text-shadow: none;
-}
-
-.menu-item.active .item-arrow {
-    color: rgba(255, 255, 255, 0.7);
-    opacity: 1;
-}
-
-/* ─── Click state ─── */
-.menu-item.pressed {
-    transform: scale(0.992);
-    transition: transform 0.08s ease;
-}
-
-/* ───────── Footer ───────── */
-.footer {
+/* --- FUNCTION ITEM --- */
+.function-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 16px;
-    background: var(--panel-footer);
-    border-top: none;
-    font-size: 12px;
-    color: var(--text-muted);
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    border-radius: 0 0 var(--radius) var(--radius);
-}
-
-.footer .discord {
-    transition: color 0.25s;
+    padding: 2px 0;
     cursor: pointer;
-    color: #888;
-}
-.footer .discord:hover { color: #fff; }
-
-.footer .page-count {
-    background: #0F172A;
-    border: none;
-    padding: 5px 12px;
-    border-radius: 6px;
-    color: #3B82F6;
-    font-size: 12px;
-    font-weight: 700;
+    min-height: 24px;
 }
 
-/* ───────── UI Components ───────── */
-/* Sliders */
-.slider-container {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-right: 5px;
-    z-index: 2;
-}
-.slider-track {
-    width: 60px;
-    height: 4px;
-    background: rgba(255,255,255,0.08);
-    border-radius: 4px;
-    position: relative;
-    overflow: hidden;
-}
-.slider-fill {
-    height: 100%;
-    background: #0f62fe;
-    border-radius: 4px;
-    transition: width 0.1s ease;
-}
-.slider-value {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-muted);
-    min-width: 22px;
-    text-align: right;
-}
-.menu-item.active .slider-value { color: #fff; }
-
-/* Toggles */
-.toggle-switch {
-    width: 34px;
-    height: 18px;
-    background: rgba(255,255,255,0.08);
-    border-radius: 18px;
-    position: relative;
-    transition: background 0.3s ease;
-    margin-right: 5px;
-    z-index: 2;
-}
-.toggle-knob {
-    width: 14px;
-    height: 14px;
-    background: #888;
-    border-radius: 50%;
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease;
-}
-.toggle-switch.on {
-    background: #0f62fe;
-}
-.toggle-switch.on .toggle-knob {
-    background: #fff;
-    transform: translateX(16px);
-}
-
-/* ───────── Separator ───────── */
-.menu-separator {
-    display: flex;
-    align-items: center;
-    padding: 6px 16px;
-    opacity: 0.7;
-}
-
-.separator-text {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    padding: 0 10px;
-    white-space: nowrap;
-}
-
-.separator-line {
-    flex: 1;
-    height: 1px;
-    background: rgba(var(--theme), 0.1);
-}
-
-/* ───────── Array Selector ───────── */
-.array-container {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--text-secondary);
-    font-size: 13.5px;
-    z-index: 2;
-}
-
-.array-arrow {
-    font-size: 11px;
-    opacity: 0.5;
-    cursor: pointer;
-    transition: opacity 0.2s, transform 0.1s;
-}
-
-.array-arrow.pressed {
-    transform: scale(0.8);
-    opacity: 1;
-}
-
-.menu-item.active .array-container { color: #fff; }
-.menu-item.active .array-arrow { opacity: 0.8; }
-.menu-item.active .array-arrow:hover { opacity: 1; }
-
-.array-value {
-    min-width: 60px;
-    text-align: right;
+.function-label {
+    font-size: 13px;
+    color: var(--text-mid);
     font-weight: 500;
+    transition: all 0.3s ease;
 }
 
-/* ───────── Color Picker ───────── */
-.color-preview {
-    width: 24px;
-    height: 16px;
-    border-radius: 6px;
-    box-shadow: 0 0 5px rgba(0,0,0,0.5);
-    border: 1px solid rgba(255,255,255,0.15);
-    z-index: 2;
-    margin-right: 0;
-}
-
-/* ───────── Banner Identity Overlay ───────── */
-.banner-identity {
-    position: absolute;
-    left: 16px;
-    bottom: 10px;
-    z-index: 3;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    pointer-events: none;
-}
-
-.banner-identity .bi-avatar {
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 1px solid rgba(var(--theme), 0.6);
-    box-shadow: 0 0 14px rgba(var(--theme), 0.5);
-    background: rgba(var(--surface), 1);
-}
-
-.banner-identity .bi-text { display: flex; flex-direction: column; line-height: 1.25; }
-.banner-identity .bi-name {
-    font-size: 14px;
-    font-weight: 700;
+.function-item.toggled-on .function-label {
     color: #fff;
-    text-shadow: 0 1px 6px rgba(0,0,0,0.8), 0 0 16px rgba(var(--theme), 0.5);
-    letter-spacing: 0.3px;
-}
-.banner-identity .bi-sub {
-    font-size: 10.5px;
-    font-weight: 600;
-    color: var(--text-secondary);
-    text-shadow: 0 1px 4px rgba(0,0,0,0.9);
-    letter-spacing: 0.4px;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
 }
 
-.banner-brand {
-    position: absolute;
-    right: 14px;
-    bottom: 10px;
-    z-index: 3;
-    font-size: 13px;
-    font-weight: 800;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: rgb(var(--theme));
-    text-shadow: 0 0 18px rgba(var(--theme), 0.8), 0 1px 4px rgba(0,0,0,0.9);
-    pointer-events: none;
-}
+.function-item:hover .function-label { color: #fff; }
 
-/* ───────── Info / Read-only Rows ───────── */
-.menu-item.is-info { cursor: default; }
-.menu-item.is-info:hover { background: transparent; }
-
-.info-value {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-secondary);
-    max-width: 210px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    text-align: right;
-    z-index: 2;
+/* Action items (centered text) */
+.function-item.action-item {
+    justify-content: center;
 }
-.menu-item.active .info-value { color: #fff; }
-
-/* Small status pill used by some rows (e.g. enabled/disabled badges) */
-.status-pill {
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    padding: 2px 9px;
-    border-radius: 20px;
-    z-index: 2;
-}
-.status-pill.on  { color: rgb(var(--theme)); background: rgba(var(--theme), 0.12); border: 1px solid rgba(var(--theme), 0.3); }
-.status-pill.off { color: var(--text-muted); background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); }
-
-/* ───────── Inline Bind Badge (F11 universal keybind) ───────── */
-.bind-badge {
-    font-size: 9.5px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    color: var(--text-secondary);
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(var(--theme), 0.25);
-    border-radius: 6px;
-    padding: 2px 7px;
-    margin-right: 8px;
-    white-space: nowrap;
-    flex-shrink: 0;
-    z-index: 2;
-}
-.menu-item.active .bind-badge { color: #fff; border-color: rgba(var(--theme), 0.55); }
-.bind-badge.listening {
-    color: rgb(var(--theme));
-    border-color: rgb(var(--theme));
-    box-shadow: 0 0 12px rgba(var(--theme), 0.5);
-    animation: kbPulse 0.9s ease-in-out infinite;
-}
-
-/* ───────── Keybind Badge ───────── */
-.keybind-badge {
-    font-size: 10.5px;
-    font-weight: 700;
-    color: var(--text-secondary);
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(var(--theme), 0.18);
-    border-radius: 6px;
-    padding: 3px 8px;
-    min-width: 20px;
+.function-item.action-item .function-label {
     text-align: center;
-    z-index: 2;
 }
-.menu-item.active .keybind-badge { color: #fff; border-color: rgba(var(--theme), 0.5); }
-.keybind-badge.listening {
-    color: rgb(var(--theme));
-    border-color: rgb(var(--theme));
-    box-shadow: 0 0 12px rgba(var(--theme), 0.5);
-    animation: kbPulse 0.9s ease-in-out infinite;
-}
-@keyframes kbPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
 
-/* ───────── Notification Toasts ───────── */
-.toast-stack {
-    position: fixed;
-    right: 18px;
-    bottom: 18px;
+/* Info items (non-interactive, centered) */
+.function-item.info-item {
+    justify-content: center;
+    cursor: default;
+}
+.function-item.info-item .function-label {
+    color: var(--text-low);
+    text-align: center;
+    font-size: 12.5px;
+}
+
+/* Text input items */
+.text-input-wrap {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    z-index: 9999;
+    gap: 4px;
+    width: 100%;
+}
+.text-input-wrap label {
+    font-size: 12px;
+    color: var(--text-low);
+    font-weight: 500;
+}
+.text-input-wrap input[type="text"] {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 5px;
+    padding: 6px 10px;
+    color: var(--text-mid);
+    font-size: 12.5px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+}
+.text-input-wrap input[type="text"]:focus {
+    border-color: rgba(var(--accent-rgb), 0.3);
+    color: var(--text-high);
+}
+.text-input-wrap input[type="text"]::placeholder {
+    color: var(--text-low);
+    opacity: 0.6;
+}
+
+/* Option dropdown-style item */
+.option-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2px 0;
+    min-height: 24px;
+}
+.option-label {
+    font-size: 12px;
+    color: var(--text-low);
+    font-weight: 500;
+}
+.option-value {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    color: var(--text-mid);
+}
+.option-value i { font-size: 10px; color: var(--text-low); }
+
+/* --- Custom Canvas Color Picker --- */
+.custom-color-picker-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 8px 0;
+    width: 100%;
+    max-height: 200px;
+    overflow: hidden;
+    transition: max-height 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                opacity 0.3s ease,
+                padding 0.3s ease;
+    opacity: 1;
+    outline: none;
+}
+.custom-color-picker-wrap.collapsed {
+    max-height: 0;
+    opacity: 0;
+    padding: 0;
+    gap: 0;
+}
+.color-picker-canvas {
+    width: 100%;
+    height: 120px;
+    position: relative;
+    border-radius: 6px;
+    cursor: crosshair;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    border: none;
+    outline: none;
+}
+.canvas-white-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(to right, #fff, transparent);
+}
+.canvas-black-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(to bottom, transparent, #000);
+}
+.color-picker-handle {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    transform: translate(-6px, -6px);
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+    pointer-events: none;
+    left: 100%;
+    top: 0%;
+}
+.hue-slider-container {
+    width: 100%;
+    height: 10px;
+    position: relative;
+    border-radius: 50px;
+    cursor: pointer;
+    overflow: visible;
+    background: linear-gradient(to right, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+.hue-slider-handle {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border: 2px solid #fff;
+    background: #fff;
+    border-radius: 50%;
+    top: -2px;
+    transform: translateX(-7px);
+    box-shadow: 0 0 6px rgba(0,0,0,0.5);
     pointer-events: none;
 }
 
-.toast {
-    min-width: 220px;
-    max-width: 340px;
+/* --- Accent Choose Color Row --- */
+.accent-choose-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    cursor: pointer;
+    padding: 2px 0;
+}
+.accent-choose-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-mid);
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.accent-choose-btn:hover {
+    color: var(--text-high);
+}
+.accent-choose-btn .accent-chevron {
+    font-size: 10px;
+    transition: transform 0.3s ease;
+}
+.accent-preview-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.4);
+    flex-shrink: 0;
+}
+
+/* --- Snow Canvas --- */
+#snow-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 999;
+    display: none;
+}
+
+/* --- Toggle --- */
+.toggle-switch {
+    width: 36px;
+    height: 18px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 50px;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0;
+}
+
+.toggle-switch::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 12px;
+    height: 12px;
+    background: #fff;
+    border-radius: 50%;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toggle-switch.on {
+    background: var(--accent);
+    box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.3);
+}
+
+.toggle-switch.on::after { left: 21px; }
+
+/* --- Slider --- */
+.slider-wrap {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 16px;
-    border-radius: 12px;
-    /* Solid bg — no backdrop-filter (renders black in transparent DUI texture) */
-    background: linear-gradient(160deg, rgba(24, 18, 32, 0.95) 0%, rgba(12, 9, 16, 0.96) 100%);
-    border: 1px solid rgba(var(--theme), 0.18);
-    border-left: 3px solid rgb(var(--theme));
-    box-shadow: 0 0 30px -8px rgba(var(--theme), 0.4);
-    color: var(--text-primary);
-    transform: translateX(120%);
-    opacity: 0;
-    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
-}
-.toast.show { transform: translateX(0); opacity: 1; }
-.toast .toast-icon {
-    font-size: 16px;
-    color: rgb(var(--theme));
-    text-shadow: 0 0 12px rgba(var(--theme), 0.6);
+    width: 110px;
     flex-shrink: 0;
 }
-.toast .toast-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.toast .toast-title { font-size: 12.5px; font-weight: 700; letter-spacing: 0.3px; }
-.toast .toast-text {
-    font-size: 11.5px;
-    color: var(--text-secondary);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-.toast.type-success { border-left-color: #2ecc71; }
-.toast.type-success .toast-icon { color: #2ecc71; text-shadow: 0 0 12px rgba(46,204,113,0.6); }
-.toast.type-error { border-left-color: #e74c3c; }
-.toast.type-error .toast-icon { color: #e74c3c; text-shadow: 0 0 12px rgba(231,76,60,0.6); }
-.toast.type-warning { border-left-color: #f1c40f; }
-.toast.type-warning .toast-icon { color: #f1c40f; text-shadow: 0 0 12px rgba(241,196,15,0.6); }
 
-/* ───────── Subtitle under item name (descriptions) ───────── */
-.item-name-wrap { display: flex; flex-direction: column; flex: 1; min-width: 0; z-index: 2; }
-.item-name-wrap .item-name { flex: none; }
-.item-desc {
-    font-size: 10.5px;
-    color: var(--text-muted);
-    margin-top: 1px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    transition: color 0.3s ease;
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    outline: none;
 }
-.menu-item.active .item-desc { color: var(--text-secondary); }
 
-/* ───────── Watermark ───────── */
-.watermark-container {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    display: flex;
-    gap: 8px;
-    z-index: 9999;
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    background: #fff;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(0,0,0,0.4);
+    transition: transform 0.2s;
+}
+
+input[type="range"]:hover::-webkit-slider-thumb {
+    transform: scale(1.2);
+    box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.4);
+}
+
+.slider-val {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-low);
+    min-width: 22px;
+    text-align: right;
+    transition: color 0.2s;
+}
+
+input[type="range"]:active + .slider-val,
+input[type="range"]:hover + .slider-val { color: var(--accent); }
+
+/* Action btn */
+.action-btn {
+    color: var(--text-low);
+    font-size: 11px;
+    transition: color 0.2s;
+}
+.function-item:hover .action-btn { color: var(--text-mid); }
+
+/* Notification */
+.notification {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(14, 14, 17, 0.95);
+    border: 1px solid rgba(var(--accent-rgb), 0.3);
+    color: var(--text-high);
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    opacity: 0;
     pointer-events: none;
+    transition: opacity 0.3s, transform 0.3s;
+    z-index: 100;
+}
+.notification.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
 }
 
+/* --- PLAYER LIST COMPONENT --- */
+.player-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 220px;
+    overflow-y: auto;
+    padding-right: 6px;
+    margin-top: 8px;
+    width: 100%;
+}
 
+.player-list-container::-webkit-scrollbar {
+    display: block;
+    width: 4px;
+}
 
-.watermark-pill {
+.player-list-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.01);
+    border-radius: 4px;
+}
+
+.player-list-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+}
+
+.player-list-container::-webkit-scrollbar-thumb:hover {
+    background: var(--accent);
+}
+
+.player-list-item {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 7px 12px;
-    border-radius: 12px;
-    background: rgba(22, 18, 32, 0.75); /* Darker tint of blue/purple with alpha */
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.04);
-    color: #cfcfcf;
-    font-family: 'Segoe UI', Tahoma, sans-serif;
-    font-size: 13px;
+    gap: 10px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.01);
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.player-list-item:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(var(--accent-rgb), 0.2);
+    transform: translateX(2px);
+}
+
+.player-list-item.active {
+    background: rgba(var(--accent-rgb), 0.08);
+    border-color: var(--accent);
+    box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.15);
+}
+
+.player-id {
+    font-size: 11px;
+    color: var(--accent);
     font-weight: 700;
-    letter-spacing: 0.2px;
+    font-family: monospace;
 }
 
-.watermark-pill .wm-icon {
-    color: rgb(var(--theme));
-    width: 15px;
-    height: 15px;
+.player-name {
+    font-size: 12.5px;
+    color: var(--text-mid);
+    font-weight: 500;
+    transition: color 0.2s;
 }
 
-@keyframes textShine {
-    0% { background-position: 200% center; }
-    100% { background-position: 0% center; }
+.player-list-item:hover .player-name,
+.player-list-item.active .player-name {
+    color: var(--text-high);
 }
 
-.watermark-pill .wm-highlight {
-    background: linear-gradient(
-        to right,
-        #ffffff 0%,
-        rgba(var(--theme), 0.7) 25%,
-        #ffffff 50%,
-        rgba(var(--theme), 0.7) 75%,
-        #ffffff 100%
-    );
-    background-size: 200% auto;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: textShine 5s linear infinite;
-    font-weight: 800;
+.player-list-empty {
+    font-size: 12px;
+    color: var(--text-low);
+    text-align: center;
+    padding: 20px 0;
+    font-style: italic;
 }
-
-.watermark-pill .wm-green {
-    background: linear-gradient(
-        to right,
-        #2ecc71 0%,
-        #82ffb6 25%,
-        #2ecc71 50%,
-        #82ffb6 75%,
-        #2ecc71 100%
-    );
-    background-size: 200% auto;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: textShine 5s linear infinite;
-    font-weight: 800;
-}
-
 </style>
-    <!-- No external CDN fonts/icons in DUI — they block page load for 30s+ in-game. -->
 </head>
 <body>
-    <!-- Watermarks -->
-    <div class="watermark-container">
-        <div class="watermark-pill">
-            <svg class="wm-icon" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="32" y="64" width="192" height="128" rx="16" stroke-width="20"></rect><line x1="68" y1="112" x2="68" y2="112" stroke-width="24"></line><line x1="108" y1="112" x2="108" y2="112" stroke-width="24"></line><line x1="148" y1="112" x2="148" y2="112" stroke-width="24"></line><line x1="188" y1="112" x2="188" y2="112" stroke-width="24"></line><line x1="96" y1="152" x2="160" y2="152" stroke-width="20"></line></svg>
-            <span class="wm-highlight">Hotkeys</span>
-        </div>
-        <div class="watermark-pill">
-            <svg class="wm-icon" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"><path d="M152,208V160a8,8,0,0,0-8-8H112a8,8,0,0,0-8,8v48"></path><path d="M224,115.5V208a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V115.5a16,16,0,0,1,5.2-11.8l80-75.5a16,16,0,0,1,21.6,0l80,75.5A16,16,0,0,1,224,115.5Z"></path></svg>
-            <span class="wm-highlight">Solaris</span>
-        </div>
-        <div class="watermark-pill">
-            <svg class="wm-icon" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"><circle cx="128" cy="96" r="64"></circle><path d="M31,216a112,112,0,0,1,194,0"></path></svg>
-            <span class="wm-highlight">Nevyhua</span>
-        </div>
-        <div class="watermark-pill">
-            <svg class="wm-icon" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"><circle cx="128" cy="128" r="44"></circle><path d="M183.7,65.1q3.8,3.5,7.2,7.2l27.3-3.9a103.2,103.2,0,0,1,10.2,24.6l-25.6,10.6a88.1,88.1,0,0,1,0,52.8l25.6,10.6a103.2,103.2,0,0,1-10.2,24.6l-27.3-3.9q-3.4,3.7-7.2,7.2l-3.9,27.3a103.2,103.2,0,0,1-24.6,10.2l-10.6-25.6a88.1,88.1,0,0,1-52.8,0l-10.6,25.6a103.2,103.2,0,0,1-24.6-10.2l-3.9-27.3q-3.8-3.5-7.2-7.2l-27.3,3.9a103.2,103.2,0,0,1-10.2-24.6l25.6-10.6a88.1,88.1,0,0,1,0-52.8L12,96.8A103.2,103.2,0,0,1,22.2,72.2l27.3,3.9q3.4-3.7,7.2-7.2l3.9-27.3a103.2,103.2,0,0,1,24.6-10.2l10.6,25.6a88.1,88.1,0,0,1,52.8,0l10.6-25.6a103.2,103.2,0,0,1,24.6,10.2Z"></path></svg>
-            <span class="wm-highlight">Release</span>
-        </div>
-        <div class="watermark-pill">
-            <svg class="wm-icon" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"><rect x="32" y="48" width="192" height="128" rx="16"></rect><line x1="128" y1="176" x2="128" y2="216"></line><line x1="88" y1="216" x2="168" y2="216"></line></svg>
-            <span class="wm-green">84</span> fps
-        </div>
-        <div class="watermark-pill">
-            <svg class="wm-icon" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="200" y1="40" x2="200" y2="216" stroke-width="24"></line><line x1="144" y1="96" x2="144" y2="216" stroke-width="24"></line><line x1="88" y1="152" x2="88" y2="216" stroke-width="24"></line><line x1="32" y1="192" x2="32" y2="216" stroke-width="24"></line></svg>
-            <span class="wm-green">14</span> Ping
-        </div>
-    </div>
-
-    <div class="menu-container hidden" id="menu-container">
-        <!-- Header Banner -->
-        <div class="header-banner">
-            <div class="banner-identity">
-                <img class="bi-avatar" id="bi-avatar" src="https://cdn.discordapp.com/embed/avatars/0.png" alt="">
-                <div class="bi-text">
-                    <span class="bi-name" id="bi-name">Solaris</span>
-                    <span class="bi-sub" id="bi-sub">connecting…</span>
+    <canvas id="snow-canvas"></canvas>
+    <div class="menu-wrapper">
+        <div class="menu-container">
+            <aside class="sidebar">
+                <div class="sidebar-brand">
+                    <span class="brand-main">Solaris</span> <span class="brand-sub">Menu</span>
                 </div>
-            </div>
-            <div class="banner-brand" id="banner-brand">SOLARIS</div>
-        </div>
-        <div class="menu-divider" aria-hidden="true"></div>
+                <nav class="sidebar-nav">
+                    <div class="sidebar-indicator" id="sidebar-indicator"></div>
+                    <div class="nav-section">
+                        <div class="nav-section-title">Main</div>
+                        <a href="#" class="nav-item active" data-category="player">
+                            <i class="fa-solid fa-user"></i> Player
+                        </a>
+                        <a href="#" class="nav-item" data-category="vehicles">
+                            <i class="fa-solid fa-car"></i> Vehicles
+                        </a>
+                        <a href="#" class="nav-item" data-category="weapons">
+                            <i class="fa-solid fa-gun"></i> Weapons
+                        </a>
+                    </div>
+                    <div class="nav-section">
+                        <div class="nav-section-title">Server</div>
+                        <a href="#" class="nav-item" data-category="online">
+                            <i class="fa-solid fa-users"></i> Online
+                        </a>
+                        <a href="#" class="nav-item" data-category="utils">
+                            <i class="fa-solid fa-wrench"></i> Utils
+                        </a>
+                        <a href="#" class="nav-item" data-category="server">
+                            <i class="fa-solid fa-server"></i> Server
+                        </a>
+                    </div>
+                    <div class="nav-section">
+                        <a href="#" class="nav-item" data-category="exploits">
+                            <i class="fa-solid fa-skull"></i> Exploits
+                        </a>
+                    </div>
+                    <div class="nav-section">
+                        <div class="nav-section-title">Extra Options</div>
+                        <a href="#" class="nav-item" data-category="configs">
+                            <i class="fa-solid fa-gear"></i> Configs
+                        </a>
+                    </div>
+                </nav>
+            </aside>
 
-        <!-- Tabs — rendered dynamically by JS -->
-        <div class="tabs"></div>
-        <div class="menu-divider" aria-hidden="true"></div>
-
-        <!-- Scrollbar — outside panel, left of list -->
-        <div class="scroll-track" id="scroll-track">
-            <span class="scroll-arrow-top">▲</span>
-            <div class="scroll-track-inner" id="scroll-track-inner">
-                <div class="scroll-thumb" id="scroll-thumb"></div>
-            </div>
-            <span class="scroll-arrow-bottom">▼</span>
-        </div>
-
-        <!-- Content Area -->
-        <div class="content">
-            <div class="content-main">
-                <div class="menu-selector" id="menu-selector" aria-hidden="true"></div>
-                <div class="menu-viewport" id="menu-viewport">
-                    <div class="menu-list" id="menu-list">
-                        <!-- Javascript will inject list items here -->
+            <main class="main-content">
+                <div class="top-bar">
+                    <div class="sub-tabs" id="sub-tabs"></div>
+                    <div class="search-box">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="function-search" placeholder="Search">
                     </div>
                 </div>
-            </div>
-        </div>
-        <div class="menu-divider" aria-hidden="true"></div>
-
-        <!-- Footer -->
-        <div class="footer">
-            <span class="discord">discord.gg/solarismenu</span>
-            <span class="page-count" id="page-count"></span>
+                <div class="content-grid" id="tile-grid"></div>
+            </main>
         </div>
     </div>
 
-    <!-- Notification toasts injected here by the bridge -->
-    <div class="toast-stack" id="toast-stack"></div>
+    <div id="notification" class="notification"></div>
 
-    <script>
-/* ============================================================================
- *  SOLARIS — Menu View Layer
- * ----------------------------------------------------------------------------
- *  This file is a *pure view*. In-game it is loaded as a DUI by the Lua core
- *  (solaris.lua), which owns all state, input and feature logic. Lua pushes
- *  view commands here through `window.postMessage` (see the Bridge section).
- *
- *  When the page is opened directly in a browser (no Lua talking to it), it
- *  falls back to STANDALONE mode: a small sample menu with local keyboard
- *  navigation so the design can be previewed.
- *
- *  Message protocol (event.data.type):
- *    solaris:init              { brand, version, discord, theme:[r,g,b] }
- *    solaris:setVisible        { visible }
- *    solaris:setHeader         { name, sub, avatar }
- *    solaris:setTabs           { tabs:[{id,label}], activeTab }
- *    solaris:setPage           { items:[...], activeIndex, animateDir, path }
- *    solaris:setActive         { index }
- *    solaris:updateItem        { index, patch:{...} }
- *    solaris:setTheme          { r, g, b } | { rainbow:true } | { rainbow:false }
- *    solaris:notify            { title, text, kind, duration }
- *    solaris:pressFeedback     { index }
- *    solaris:setKeybindState   { index, listening }
- * ==========================================================================*/
+<script>
+/*
+    Solaris Menu - Professional CEF/DUI dashboard for FiveM
+    Dynamic elements populated via PostMessages and NUI callbacks
+*/
 
-(function () {
-    "use strict";
+const menuData = {
+    player: {
+        subTabs: [
+            { id: "main", label: "Main", icon: "fa-user" },
+            { id: "teleports", label: "Teleports", icon: "fa-location-dot" },
+            { id: "clothes", label: "Clothes", icon: "fa-shirt" }
+        ],
+        main: [
+            {
+                group: "General Options", icon: "fa-user",
+                items: [
+                    { id: "revive", label: "Revive", type: "action" },
+                    { id: "native_revive", label: "Native Revive", type: "action" },
+                    { id: "framework_revive", label: "Framework Revive", type: "action" },
+                    { id: "refill_armor", label: "Refill Armor", type: "action" },
+                    { id: "refill_health", label: "Refill Health", type: "action" },
+                    { id: "suicide", label: "Suicide", type: "action" },
+                    { id: "clear_injuries", label: "Clear Injuries", type: "action" },
+                    { id: "toggle_handcuff", label: "Toggle Handcuff", type: "action" }
+                ]
+            },
+            {
+                group: "Movement", icon: "fa-person-running",
+                items: [
+                    { id: "noclip", label: "Noclip", type: "toggle", value: false },
+                    { id: "noclip_speed", label: "Noclip Speed", type: "slider", value: 15 },
+                    { id: "freecam", label: "Freecam", type: "toggle", value: false },
+                    { id: "full_invisible", label: "Full Invisible", type: "toggle", value: false },
+                    { id: "solo_session", label: "Solo Session", type: "toggle", value: false },
+                    { id: "enable_pistol_whip", label: "Enable Pistol Whip", type: "toggle", value: false },
+                    { id: "enable_cover", label: "Enable Cover", type: "toggle", value: false }
+                ]
+            },
+            {
+                group: "Powers", icon: "fa-bolt-lightning",
+                items: [
+                    { id: "invisible", label: "Invisible", type: "toggle", value: false },
+                    { id: "super_jump", label: "Super Jump", type: "toggle", value: false },
+                    { id: "beast_jump", label: "Beast Jump", type: "toggle", value: false },
+                    { id: "fake_die", label: "Fake Die", type: "toggle", value: false },
+                    { id: "super_punch", label: "Super Punch", type: "toggle", value: false },
+                    { id: "explosive_melee", label: "Explosive Melee", type: "toggle", value: false },
+                    { id: "infinite_stamina", label: "Infinite Stamina", type: "toggle", value: false }
+                ]
+            },
+            {
+                group: "Protections", icon: "fa-shield-halved",
+                items: [
+                    { id: "run_admin", label: "Run Admin", type: "toggle", value: false },
+                    { id: "ghost_mode", label: "Ghost Mode", type: "toggle", value: false },
+                    { id: "passive_mode", label: "Passive Mode", type: "toggle", value: false },
+                    { id: "block_screenshots", label: "Block ScreenShoots", type: "toggle", value: false },
+                    { id: "anti_cuffs", label: "Anti Cuffs", type: "toggle", value: false },
+                    { id: "anti_tp", label: "Block TP to Me", type: "toggle", value: false }
+                ]
+            }
+        ],
+        teleports: [
+            {
+                group: "Quick Teleports", icon: "fa-location-dot",
+                items: [
+                    { id: "tp_waypoint", label: "Teleport to Waypoint", type: "action" },
+                    { id: "tp_objective", label: "Teleport to Objective", type: "action" },
+                    { id: "save_pos", label: "Save Position", type: "action" },
+                    { id: "load_pos", label: "Load Position", type: "action" }
+                ]
+            },
+            {
+                group: "Saved Locations", icon: "fa-bookmark",
+                items: [
+                    { id: "tp_lsia", label: "LS Airport", type: "action" },
+                    { id: "tp_maze", label: "Maze Bank Tower", type: "action" },
+                    { id: "tp_military", label: "Military Base", type: "action" },
+                    { id: "tp_hospital", label: "Central Hospital", type: "action" },
+                    { id: "tp_casino", label: "Diamond Casino", type: "action" },
+                    { id: "tp_cayo", label: "Cayo Perico", type: "action" }
+                ]
+            }
+        ],
+        clothes: [
+            {
+                group: "Outfit Manager", icon: "fa-shirt",
+                items: [
+                    { id: "save_outfit", label: "Save Current Outfit", type: "action" },
+                    { id: "load_outfit", label: "Load Outfit", type: "action" },
+                    { id: "reset_outfit", label: "Reset Outfit", type: "action" }
+                ]
+            },
+            {
+                group: "Components", icon: "fa-hat-wizard",
+                items: [
+                    { id: "hat", label: "Hat / Helmet", type: "action" },
+                    { id: "mask", label: "Mask", type: "action" },
+                    { id: "upper", label: "Upper Body", type: "action" },
+                    { id: "lower", label: "Lower Body", type: "action" },
+                    { id: "shoes", label: "Shoes", type: "action" },
+                    { id: "accessories", label: "Accessories", type: "action" }
+                ]
+            }
+        ]
+    },
 
-    /* ───────────────────────── Theme engine ───────────────────────── */
-    var Theme = (function () {
-        var currentRgb = [3, 252, 240];
-        var rainbowRaf = null;
+    vehicles: {
+        subTabs: [
+            { id: "your_vehicle", label: "Your Vehicle", icon: "fa-car-side" },
+            { id: "radar", label: "Radar", icon: "fa-satellite-dish" }
+        ],
+        your_vehicle: [
+            {
+                group: "My Vehicle", icon: "fa-car-side",
+                items: [
+                    { id: "repair_vehicle", label: "Repair Vehicle", type: "action" },
+                    { id: "delete_vehicle", label: "Delete Vehicle", type: "action" },
+                    { id: "explode_vehicle", label: "Explode Vehicle", type: "action" },
+                    { id: "quick_enter", label: "Quick Enter/Exit Vehicle", type: "toggle", value: false },
+                    { id: "rainbow_vehicle", label: "Rainbow Vehicle", type: "toggle", value: false },
+                    { id: "auto_repair", label: "Auto Repair Vehicle", type: "toggle", value: false },
+                    { id: "remove_gravity", label: "Remove Vehicle Gravity", type: "toggle", value: false },
+                    { id: "invisible_vehicle", label: "Invisible Vehicle", type: "toggle", value: false },
+                    { id: "random_color", label: "Random Collor", type: "action" },
+                    { id: "car_shooter", label: "Car Shooter", type: "toggle", value: false },
+                    { id: "fly_vehicle", label: "Fly Vehicle", type: "toggle", value: false },
+                    { id: "horn_boost", label: "Horn Boost", type: "toggle", value: false },
+                    { id: "v_speed", label: "Speed", type: "slider", value: 50 },
+                    { id: "super_velocity", label: "Super Velocity", type: "toggle", value: false }
+                ]
+            },
+            {
+                group: "Nearest Vehicle", icon: "fa-car-rear",
+                items: [
+                    { id: "unlock_vehicles", label: "Unlock Vehicles", type: "toggle", value: false },
+                    { id: "glow_vehicles", label: "Glow Vehicles", type: "toggle", value: false },
+                    { id: "toolbox_vehicles", label: "Toolbox Vehicles", type: "toggle", value: false },
+                    { id: "nearest_info", label: "Nearest Vehicle: Not Found", type: "info" },
+                    { id: "bring_nearest", label: "Bring Nearest Vehicle", type: "action" },
+                    { id: "steal_nearest", label: "Steal Nearest Vehicle", type: "action" },
+                    { id: "delete_nearest", label: "Delete Nearest Vehicle", type: "action" },
+                    { id: "hijack_nearest", label: "Hijack Nearest Vehicle", type: "action" },
+                    { id: "remove_wheels", label: "Remove Nearest Vehicle Wheels", type: "action" },
+                    { id: "remove_doors", label: "Remove Nearest Vehicle Doors", type: "action" }
+                ]
+            },
+            {
+                group: "Spawn Vehicles", icon: "fa-car-side",
+                items: [
+                    { id: "vehicle_model", label: "Vehicle Model", type: "text", placeholder: "Type here..." },
+                    { id: "spawn_vehicle", label: "Spawn Vehicle", type: "action" }
+                ]
+            }
+        ],
+        radar: [
+            {
+                group: "Radar Options", icon: "fa-satellite-dish",
+                items: [
+                    { id: "radar_toggle", label: "Enable Radar", type: "toggle", value: true },
+                    { id: "radar_zoom", label: "Zoom Level", type: "slider", value: 50 },
+                    { id: "radar_expand", label: "Expanded Radar", type: "toggle", value: false },
+                    { id: "radar_players", label: "Show Players", type: "toggle", value: true }
+                ]
+            }
+        ]
+    },
 
-        function hexToRgb(hex) {
-            hex = String(hex).replace("#", "");
-            return [
-                parseInt(hex.substring(0, 2), 16),
-                parseInt(hex.substring(2, 4), 16),
-                parseInt(hex.substring(4, 6), 16)
-            ];
-        }
+    weapons: {
+        subTabs: [
+            { id: "main", label: "Weapon Mods", icon: "fa-gun" },
+            { id: "give", label: "Give Weapons", icon: "fa-box-open" }
+        ],
+        main: [
+            {
+                group: "Aim Mods", icon: "fa-crosshairs",
+                items: [
+                    { id: "master_aim", label: "Master Aimbot", type: "toggle", value: false },
+                    { id: "silent_aim", label: "Silent Aim", type: "toggle", value: false },
+                    { id: "triggerbot", label: "Triggerbot", type: "toggle", value: false },
+                    { id: "aim_fov", label: "Aim FOV", type: "slider", value: 30 }
+                ]
+            },
+            {
+                group: "Weapon Options", icon: "fa-gun",
+                items: [
+                    { id: "no_recoil", label: "No Recoil", type: "toggle", value: false },
+                    { id: "no_spread", label: "No Spread", type: "toggle", value: false },
+                    { id: "inf_ammo", label: "Infinite Ammo", type: "toggle", value: false },
+                    { id: "rapid_fire", label: "Rapid Fire", type: "toggle", value: false },
+                    { id: "explosive_ammo", label: "Explosive Ammo", type: "toggle", value: false },
+                    { id: "one_shot_kill", label: "One Shot Kill", type: "toggle", value: false }
+                ]
+            }
+        ],
+        give: [
+            {
+                group: "Give All", icon: "fa-box-open",
+                items: [
+                    { id: "give_all", label: "Give All Weapons", type: "action" },
+                    { id: "remove_all", label: "Remove All Weapons", type: "action" }
+                ]
+            },
+            {
+                group: "Categories", icon: "fa-list",
+                items: [
+                    { id: "give_pistols", label: "Give Pistols", type: "action" },
+                    { id: "give_smgs", label: "Give SMGs", type: "action" },
+                    { id: "give_rifles", label: "Give Assault Rifles", type: "action" },
+                    { id: "give_snipers", label: "Give Snipers", type: "action" },
+                    { id: "give_shotguns", label: "Give Shotguns", type: "action" },
+                    { id: "give_heavy", label: "Give Heavy Weapons", type: "action" },
+                    { id: "give_melee", label: "Give Melee Weapons", type: "action" },
+                    { id: "give_throwables", label: "Give Throwables", type: "action" }
+                ]
+            }
+        ]
+    },
 
-        function rgbToHex(r, g, b) {
-            return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
-        }
+    online: {
+        subTabs: [],
+        default: [
+            {
+                group: "Player List", icon: "fa-users",
+                items: [
+                    { id: "search_player", label: "Search Player", type: "text", placeholder: "Type name or ID..." },
+                    { id: "players_container", label: "Players", type: "playerlist", players: [] }
+                ]
+            },
+            {
+                group: "Player Options", icon: "fa-user",
+                items: [
+                    { id: "spectate", label: "Spectate Player", type: "toggle", value: false },
+                    { id: "follow_player", label: "Follow Player", type: "toggle", value: false },
+                    { id: "talk_to", label: "Talk To Player", type: "toggle", value: false },
+                    { id: "bring_player", label: "Bring Player [Client-Side]", type: "toggle", value: false },
+                    { id: "copy_ped", label: "Copy Ped", type: "action" },
+                    { id: "teleport_to", label: "Teleport", type: "action" }
+                ]
+            },
+            {
+                group: "Extras", icon: "fa-puzzle-piece",
+                items: [
+                    { id: "get_control", label: "Get Control", type: "action" },
+                    { id: "clear_vehicles", label: "Clear Vehicles", type: "action" },
+                    { id: "show_dead", label: "Show Only Dead", type: "toggle", value: false }
+                ]
+            },
+            {
+                group: "Attachs", icon: "fa-user",
+                items: [
+                    { id: "attach_me", label: "Attach Me To Player", type: "action" },
+                    { id: "sex_player", label: "Sex Player", type: "action" }
+                ]
+            }
+        ]
+    },
 
-        function hslToRgb(h, s, l) {
-            h /= 360; s /= 100; l /= 100;
-            var r, g, b;
-            if (s === 0) { r = g = b = l; }
-            else {
-                var hue2rgb = function (p, q, t) {
-                    if (t < 0) t += 1;
-                    if (t > 1) t -= 1;
-                    if (t < 1 / 6) return p + (q - p) * 6 * t;
-                    if (t < 1 / 2) return q;
-                    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
-                    return p;
+    utils: {
+        subTabs: [],
+        default: [
+            {
+                group: "Visual Mods", icon: "fa-eye",
+                items: [
+                    { id: "esp_master", label: "Master ESP", type: "toggle", value: false },
+                    { id: "esp_box", label: "Box ESP", type: "toggle", value: false },
+                    { id: "esp_skeleton", label: "Skeleton", type: "toggle", value: false },
+                    { id: "esp_distance", label: "Distance", type: "toggle", value: false },
+                    { id: "esp_name", label: "Name Tags", type: "toggle", value: false }
+                ]
+            },
+            {
+                group: "World", icon: "fa-globe",
+                items: [
+                    { id: "time_freeze", label: "Freeze Time", type: "toggle", value: false },
+                    { id: "blackout", label: "Blackout", type: "toggle", value: false },
+                    { id: "clear_weather", label: "Clear Weather", type: "action" },
+                    { id: "snow_weather", label: "Snow Weather", type: "action" }
+                ]
+            }
+        ]
+    },
+
+    server: {
+        subTabs: [
+            { id: "everyone", label: "Everyone", icon: "fa-users" },
+            { id: "vehicles_tab", label: "Vehicles", icon: "fa-car" }
+        ],
+        everyone: [
+            {
+                group: "All Peoples", icon: "fa-users",
+                items: [
+                    { id: "eyes_lazer", label: "Eyes Lazer", type: "toggle", value: false },
+                    { id: "eyes_gas", label: "Eyes Gas", type: "toggle", value: false },
+                    { id: "eyes_rpg", label: "Eyes RPG", type: "toggle", value: false },
+                    { id: "limb1", label: "Limb Around [1]", type: "toggle", value: false },
+                    { id: "limb2", label: "Limb Around [2]", type: "toggle", value: false },
+                    { id: "remove_from_vehicle", label: "Remove From Vehicle [F]", type: "toggle", value: false },
+                    { id: "kill_heli", label: "Kill everyone with heli", type: "toggle", value: false },
+                    { id: "talk_all", label: "Talk All", type: "toggle", value: false },
+                    { id: "force_fall_loop", label: "Force Fall All Players (Loop)", type: "toggle", value: false },
+                    { id: "punch_all_loop", label: "Punch All Players (Loop)", type: "toggle", value: false },
+                    { id: "silent_kill_all", label: "Silent Kill All", type: "action" },
+                    { id: "kill_all_m2", label: "Kill All [Method 2]", type: "action" },
+                    { id: "kill_all_beta", label: "Kill All [Beta]", type: "action" },
+                    { id: "force_fall_all", label: "Force Fall All Players", type: "action" },
+                    { id: "punch_all", label: "Punch All Players", type: "action" },
+                    { id: "crash_players", label: "Crash Players [Dont Spam]", type: "action" }
+                ]
+            },
+            {
+                group: "Others", icon: "fa-ellipsis",
+                items: [
+                    { id: "loot_all", label: "Loot everything [500M]", type: "action" },
+                    { id: "increase_rpg", label: "Increase Explosion Area [RPG]", type: "action" },
+                    { id: "cold_attack", label: "Cold Attack", type: "toggle", value: false }
+                ]
+            },
+            {
+                group: "Skins", icon: "fa-user-astronaut",
+                items: [
+                    { id: "reset_ped_m", label: "Reset Ped [M]", type: "action" },
+                    { id: "reset_ped_f", label: "Reset Ped [F]", type: "action" },
+                    { id: "set_michael", label: "Set Ped: Michael", type: "action" },
+                    { id: "set_franklin", label: "Set Ped: Franklin", type: "action" },
+                    { id: "set_trevor", label: "Set Ped: Trevor", type: "action" }
+                ]
+            }
+        ],
+        vehicles_tab: [
+            {
+                group: "Vehicle Trolling", icon: "fa-car-burst",
+                items: [
+                    { id: "explode_all_v", label: "Explode All Vehicles", type: "action" },
+                    { id: "delete_all_v", label: "Delete All Vehicles", type: "action" },
+                    { id: "kick_all_v", label: "Kick All From Vehicles", type: "action" },
+                    { id: "fling_all_v", label: "Fling All Vehicles", type: "action" }
+                ]
+            }
+        ]
+    },
+
+    exploits: {
+        subTabs: [],
+        default: [
+            {
+                group: "Crash Methods", icon: "fa-skull",
+                items: [
+                    { id: "crash_v1", label: "Crash Player [v1]", type: "action" },
+                    { id: "crash_v2", label: "Crash Player [v2]", type: "action" },
+                    { id: "crash_server", label: "Crash Server [Beta]", type: "action" }
+                ]
+            },
+            {
+                group: "Miscellaneous", icon: "fa-bug",
+                items: [
+                    { id: "fake_leave", label: "Fake Leave", type: "action" },
+                    { id: "spoof_name", label: "Spoof Name", type: "action" },
+                    { id: "chat_spam", label: "Chat Spam", type: "toggle", value: false },
+                    { id: "lag_server", label: "Lag Server", type: "toggle", value: false }
+                ]
+            }
+        ]
+    },
+
+    configs: {
+        subTabs: [
+            { id: "general", label: "General", icon: "fa-gear" },
+            { id: "cloud", label: "Cloud", icon: "fa-cloud" }
+        ],
+        general: [
+            {
+                group: "Configs", icon: "fa-gear",
+                items: [
+                    { id: "change_language", label: "Change Language", type: "action" },
+                    { id: "change_bind", label: "Change Bind [...]", type: "action" },
+                    { id: "menu_accent", label: "Menu Accent", type: "accent", value: "solaris" },
+                    { id: "rgb_rainbow", label: "RGB Rainbow", type: "toggle", value: false },
+                    { id: "fps_booster", label: "Fps Booster", type: "toggle", value: false },
+                    { id: "snow_effect", label: "Snow Effect", type: "toggle", value: false },
+                    { id: "binds_list", label: "Binds List", type: "toggle", value: false }
+                ]
+            },
+            {
+                group: "User Infos", icon: "fa-user",
+                items: [
+                    { id: "user_name", label: "User: SolarisUser", type: "info" },
+                    { id: "user_sub", label: "Subscription: Active", type: "info" },
+                    { id: "server_ac", label: "Server Anticheat: None", type: "info" },
+                    { id: "resource_ac", label: "Resource Anticheat: None", type: "info" },
+                    { id: "server_name_info", label: "Server Name:", type: "info" },
+                    { id: "server_fw", label: "Server Framework: Unknown", type: "info" },
+                    { id: "players_online", label: "Players Online: 0", type: "info" }
+                ]
+            }
+        ],
+        cloud: [
+            {
+                group: "Cloud Configs", icon: "fa-cloud",
+                items: [
+                    { id: "save_cloud", label: "Save to Cloud", type: "action" },
+                    { id: "load_cloud", label: "Load from Cloud", type: "action" },
+                    { id: "delete_cloud", label: "Delete Cloud Config", type: "action" }
+                ]
+            }
+        ]
+    }
+};
+
+let currentCategory = 'player';
+let currentSubTab = 'main';
+let searchQuery = '';
+let playerSearchQuery = '';
+let isTransitioning = false;
+
+// Dynamic player selection caching
+let selectedPlayerId = null;
+let selectedPlayerName = null;
+
+const tileGrid = document.getElementById('tile-grid');
+const subTabsContainer = document.getElementById('sub-tabs');
+const searchInput = document.getElementById('function-search');
+const notification = document.getElementById('notification');
+
+function init() {
+    renderSubTabs();
+    renderContent();
+    setupEvents();
+    // Initialize sidebar indicator position
+    requestAnimationFrame(() => {
+        const activeNav = document.querySelector('.nav-item.active');
+        if (activeNav) updateSidebarIndicator(activeNav);
+    });
+}
+
+/* ---- Render sub-tabs for current category ---- */
+function renderSubTabs() {
+    subTabsContainer.innerHTML = '';
+    const catData = menuData[currentCategory];
+    if (!catData) return;
+
+    const tabs = catData.subTabs;
+    if (!tabs || tabs.length === 0) return;
+
+    tabs.forEach((tab, i) => {
+        const el = document.createElement('div');
+        el.className = 'sub-tab' + (tab.id === currentSubTab ? ' active' : '');
+        el.setAttribute('data-subtab', tab.id);
+        el.innerHTML = `<i class="fa-solid ${tab.icon}"></i> ${tab.label}`;
+        el.onclick = () => {
+            if (tab.id === currentSubTab || isTransitioning) return;
+            currentSubTab = tab.id;
+            // Update active sub-tab styling
+            subTabsContainer.querySelectorAll('.sub-tab').forEach(s => s.classList.remove('active'));
+            el.classList.add('active');
+            // Crossfade content
+            switchContent();
+        };
+        subTabsContainer.appendChild(el);
+    });
+}
+
+/* ---- Render content for current category + sub-tab ---- */
+function renderContent() {
+    const catData = menuData[currentCategory];
+    if (!catData) return;
+
+    // Determine which group data to show
+    let groups;
+    if (catData.subTabs && catData.subTabs.length > 0) {
+        groups = catData[currentSubTab];
+    } else {
+        groups = catData.default;
+    }
+    if (!groups) return;
+
+    tileGrid.innerHTML = '';
+    tileGrid.scrollTop = 0;
+
+    groups.forEach((group, groupIdx) => {
+        const filteredItems = group.items.filter(item =>
+            item.label.toLowerCase().includes(searchQuery)
+        );
+        if (filteredItems.length === 0) return;
+
+        const tile = document.createElement('div');
+        tile.className = 'tile tile-entry-anim';
+        tile.style.animationDelay = `${groupIdx * 60}ms`;
+
+        const tileHeader = `
+            <div class="tile-header">
+                <i class="fa-solid ${group.icon} tile-icon"></i>
+                <span>${group.group}</span>
+            </div>
+        `;
+
+        const itemsContainer = document.createElement('div');
+        itemsContainer.className = 'tile-items';
+
+        filteredItems.forEach((item, itemIdx) => {
+            const delay = `${(groupIdx * 60) + (itemIdx * 25) + 80}ms`;
+
+            if (item.type === 'text') {
+                // Text input item
+                const wrap = document.createElement('div');
+                wrap.className = 'text-input-wrap item-entry-anim';
+                wrap.style.animationDelay = delay;
+                wrap.innerHTML = `
+                    <label>${item.label}</label>
+                    <input type="text" placeholder="${item.placeholder || ''}" data-id="${item.id}" value="${item.value || ''}">
+                `;
+                const input = wrap.querySelector('input');
+                input.oninput = (e) => {
+                    item.value = e.target.value;
+                    if (item.id === 'search_player') {
+                        playerSearchQuery = e.target.value;
+                        filterPlayerListDOM();
+                    } else {
+                        onInteraction(item.id, item.value);
+                    }
                 };
-                var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-                var p = 2 * l - q;
-                r = hue2rgb(p, q, h + 1 / 3);
-                g = hue2rgb(p, q, h);
-                b = hue2rgb(p, q, h - 1 / 3);
+                input.onkeydown = (e) => {
+                    if (e.key === 'Enter') {
+                        if (item.id !== 'search_player') {
+                            onInteraction(item.id, item.value);
+                            input.blur();
+                            showNotify(`Set ${item.label}: ${item.value}`);
+                        }
+                    }
+                };
+                itemsContainer.appendChild(wrap);
+                return;
             }
-            return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
-        }
 
-        function set(r, g, b) {
-            currentRgb = [r, g, b];
-            document.documentElement.style.setProperty("--theme", r + ", " + g + ", " + b);
-        }
+            if (item.type === 'playerlist') {
+                // Custom Player list rendering
+                const wrap = document.createElement('div');
+                wrap.className = 'player-list-container item-entry-anim';
+                wrap.style.animationDelay = delay;
+                wrap.id = 'player-list-container';
+                itemsContainer.appendChild(wrap);
+                
+                // Trigger populating list container asynchronously to ensure DOM exists
+                setTimeout(filterPlayerListDOM, 0);
+                return;
+            }
 
-        function startRainbow() {
-            if (rainbowRaf) return;
-            var start = null;
-            var tick = function (ts) {
-                if (!start) start = ts;
-                var hue = ((ts - start) / 1000 * 60) % 360;
-                var rgb = hslToRgb(hue, 85, 65);
-                set(rgb[0], rgb[1], rgb[2]);
-                rainbowRaf = requestAnimationFrame(tick);
-            };
-            rainbowRaf = requestAnimationFrame(tick);
-        }
+            if (item.type === 'info') {
+                // Info display item
+                const itemEl = document.createElement('div');
+                itemEl.className = 'function-item info-item item-entry-anim';
+                itemEl.style.animationDelay = delay;
+                itemEl.innerHTML = `<span class="function-label">${item.label}</span>`;
+                itemsContainer.appendChild(itemEl);
+                return;
+            }
 
-        function stopRainbow() {
-            if (rainbowRaf) { cancelAnimationFrame(rainbowRaf); rainbowRaf = null; }
-        }
+            if (item.type === 'accent') {
+                const itemEl = document.createElement('div');
+                itemEl.className = 'function-item item-entry-anim';
+                itemEl.style.flexDirection = 'column';
+                itemEl.style.alignItems = 'flex-start';
+                itemEl.style.animationDelay = delay;
+                itemEl.style.width = '100%';
+                itemEl.style.cursor = 'default';
 
-        return {
-            set: set, hexToRgb: hexToRgb, rgbToHex: rgbToHex,
-            startRainbow: startRainbow, stopRainbow: stopRainbow,
-            current: function () { return currentRgb.slice(); }
+                itemEl.innerHTML = `
+                    <div class="accent-choose-row" id="accent-toggle-${item.id}">
+                        <span class="function-label">${item.label}</span>
+                        <div class="accent-choose-btn">
+                            <div class="accent-preview-dot" id="accent-preview-${item.id}"></div>
+                            <span>Choose Color</span>
+                            <i class="fa-solid fa-chevron-down accent-chevron"></i>
+                        </div>
+                    </div>
+                    <div class="custom-color-picker-wrap collapsed" id="picker-wrap-${item.id}">
+                        <div class="color-picker-canvas" id="canvas-${item.id}">
+                            <div class="canvas-white-overlay"></div>
+                            <div class="canvas-black-overlay"></div>
+                            <div class="color-picker-handle" id="handle-${item.id}"></div>
+                        </div>
+                        <div class="hue-slider-container" id="hue-track-${item.id}">
+                            <div class="hue-slider-handle" id="hue-handle-${item.id}"></div>
+                        </div>
+                    </div>
+                `;
+
+                itemsContainer.appendChild(itemEl);
+
+                // Toggle picker expand/collapse on Choose Color click
+                const accentToggleBtn = itemEl.querySelector(`#accent-toggle-${item.id}`);
+                const pickerWrap = itemEl.querySelector(`#picker-wrap-${item.id}`);
+                accentToggleBtn.addEventListener('click', () => {
+                    pickerWrap.classList.toggle('collapsed');
+                    const chevron = accentToggleBtn.querySelector('.accent-chevron');
+                    chevron.style.transform = pickerWrap.classList.contains('collapsed') ? '' : 'rotate(180deg)';
+                    if (!pickerWrap.classList.contains('collapsed')) {
+                        setTimeout(updatePickerUI, 50);
+                    }
+                });
+
+                // Initialize HSV values from saved value or defaults (Teal)
+                if (!item.hsv) {
+                    item.hsv = { h: 164, s: 100, v: 71 }; 
+                }
+
+                const canvas = itemEl.querySelector(`#canvas-${item.id}`);
+                const handle = itemEl.querySelector(`#handle-${item.id}`);
+                const hueTrack = itemEl.querySelector(`#hue-track-${item.id}`);
+                const hueHandle = itemEl.querySelector(`#hue-handle-${item.id}`);
+
+                function updatePickerUI() {
+                    canvas.style.backgroundColor = `hsl(${item.hsv.h}, 100%, 50%)`;
+                    handle.style.left = `${item.hsv.s}%`;
+                    handle.style.top = `${100 - item.hsv.v}%`;
+                    hueHandle.style.left = `${(item.hsv.h / 360) * 100}%`;
+
+                    const isRgbActive = menuData.configs.general[0].items.find(i => i.id === 'rgb_rainbow').value;
+                    if (!isRgbActive) {
+                        const [r, g, b] = hsvToRgb(item.hsv.h, item.hsv.s, item.hsv.v);
+                        const hex = rgbToHex(r, g, b);
+                        setAccentColor(hex, `${r}, ${g}, ${b}`, hex);
+                    }
+                }
+
+                let isDraggingCanvas = false;
+                let isDraggingHue = false;
+
+                function handleCanvasDrag(e) {
+                    const rect = canvas.getBoundingClientRect();
+                    let x = e.clientX - rect.left;
+                    let y = e.clientY - rect.top;
+
+                    x = Math.max(0, Math.min(x, rect.width));
+                    y = Math.max(0, Math.min(y, rect.height));
+
+                    item.hsv.s = Math.round((x / rect.width) * 100);
+                    item.hsv.v = Math.round((1 - y / rect.height) * 100);
+
+                    updatePickerUI();
+                    onInteraction(item.id, `hsv(${item.hsv.h}, ${item.hsv.s}%, ${item.hsv.v}%)`);
+                }
+
+                function handleHueDrag(e) {
+                    const rect = hueTrack.getBoundingClientRect();
+                    let x = e.clientX - rect.left;
+                    x = Math.max(0, Math.min(x, rect.width));
+
+                    item.hsv.h = Math.round((x / rect.width) * 360);
+                    updatePickerUI();
+                    onInteraction(item.id, `hsv(${item.hsv.h}, ${item.hsv.s}%, ${item.hsv.v}%)`);
+                }
+
+                canvas.addEventListener('mousedown', (e) => {
+                    isDraggingCanvas = true;
+                    handleCanvasDrag(e);
+                });
+
+                hueTrack.addEventListener('mousedown', (e) => {
+                    isDraggingHue = true;
+                    handleHueDrag(e);
+                });
+
+                window.addEventListener('mousemove', (e) => {
+                    if (isDraggingCanvas) handleCanvasDrag(e);
+                    if (isDraggingHue) handleHueDrag(e);
+                });
+
+                window.addEventListener('mouseup', () => {
+                    isDraggingCanvas = false;
+                    isDraggingHue = false;
+                });
+
+                setTimeout(updatePickerUI, 0);
+                return;
+            }
+
+            const itemEl = document.createElement('div');
+            const isAction = item.type === 'action';
+            itemEl.className = 'function-item item-entry-anim' + (isAction ? ' action-item' : '');
+            if (item.type === 'toggle' && item.value) {
+                itemEl.classList.add('toggled-on');
+            }
+            itemEl.style.animationDelay = delay;
+
+            let control = '';
+            if (item.type === 'toggle') {
+                control = `<div class="toggle-switch ${item.value ? 'on' : ''}" data-id="${item.id}"></div>`;
+            } else if (item.type === 'slider') {
+                control = `
+                    <div class="slider-wrap">
+                        <input type="range" min="0" max="100" value="${item.value}" data-id="${item.id}">
+                        <span class="slider-val">${item.value}</span>
+                    </div>
+                `;
+            } else {
+                control = `<span class="action-btn"><i class="fa-solid fa-chevron-right"></i></span>`;
+            }
+
+            if (isAction) {
+                itemEl.innerHTML = `<span class="function-label">${item.label}</span>`;
+            } else {
+                itemEl.innerHTML = `
+                    <span class="function-label">${item.label}</span>
+                    <div class="function-control">${control}</div>
+                `;
+            }
+
+            // Interaction logic
+            if (item.type === 'toggle') {
+                itemEl.querySelector('.toggle-switch').onclick = (e) => {
+                    item.value = !item.value;
+                    e.currentTarget.classList.toggle('on');
+                    itemEl.classList.toggle('toggled-on', item.value);
+                    onInteraction(item.id, item.value);
+                    
+                    if (item.id === 'rgb_rainbow') {
+                        if (item.value) {
+                            startRGBRainbow();
+                        } else {
+                            stopRGBRainbow();
+                        }
+                    }
+                    if (item.id === 'snow_effect') {
+                        if (item.value) {
+                            startSnowEffect();
+                        } else {
+                            stopSnowEffect();
+                        }
+                    }
+                };
+            } else if (item.type === 'slider') {
+                const slider = itemEl.querySelector('input[type="range"]');
+                const valDisplay = itemEl.querySelector('.slider-val');
+                slider.oninput = (e) => {
+                    item.value = e.target.value;
+                    valDisplay.textContent = item.value;
+                    onInteraction(item.id, item.value);
+                };
+            } else if (item.type === 'action') {
+                itemEl.onclick = () => {
+                    if (item.id === 'change_bind') {
+                        startListeningForKey(item, itemEl);
+                    } else {
+                        onInteraction(item.id, 'executed');
+                        showNotify(`Action: ${item.label}`);
+                    }
+                };
+            }
+
+            itemsContainer.appendChild(itemEl);
+        });
+
+        tile.innerHTML = tileHeader;
+        tile.appendChild(itemsContainer);
+        tileGrid.appendChild(tile);
+    });
+}
+
+/* ---- Dynamic Online Player List filter & renderer ---- */
+function filterPlayerListDOM() {
+    const container = document.getElementById('player-list-container');
+    if (!container) return;
+    
+    const playerItem = menuData.online.default.find(g => g.group === "Player List").items.find(i => i.id === "players_container");
+    const players = playerItem ? (playerItem.players || []) : [];
+    
+    container.innerHTML = '';
+    
+    if (players.length === 0) {
+        container.innerHTML = `<div class="player-list-empty">No players online</div>`;
+        return;
+    }
+    
+    const query = playerSearchQuery.trim().toLowerCase();
+    const filtered = players.filter(p => 
+        p.name.toLowerCase().includes(query) || 
+        p.id.toString().includes(query)
+    );
+    
+    if (filtered.length === 0) {
+        container.innerHTML = `<div class="player-list-empty">No matching players</div>`;
+        return;
+    }
+    
+    filtered.forEach(p => {
+        const activeClass = selectedPlayerId === p.id ? 'active' : '';
+        const itemEl = document.createElement('div');
+        itemEl.className = `player-list-item ${activeClass}`;
+        itemEl.setAttribute('data-id', p.id);
+        itemEl.innerHTML = `
+            <span class="player-id">[${p.id}]</span>
+            <span class="player-name">${p.name}</span>
+        `;
+        itemEl.onclick = () => {
+            selectedPlayerId = p.id;
+            selectedPlayerName = p.name;
+            
+            container.querySelectorAll('.player-list-item').forEach(el => el.classList.remove('active'));
+            itemEl.classList.add('active');
+            
+            // Trigger selection callback
+            onInteraction('select_player', { id: p.id, name: p.name });
+            updatePlayerOptionsUI();
         };
-    })();
+        container.appendChild(itemEl);
+    });
+}
 
-    /* ───────────────────────── DOM references ───────────────────────── */
-    var dom = {};
-    function cacheDom() {
-        dom.container = document.getElementById("menu-container");
-        dom.content = document.querySelector(".content");
-        dom.contentMain = document.querySelector(".content-main");
-        dom.viewport = document.getElementById("menu-viewport");
-        dom.selector = document.getElementById("menu-selector");
-        dom.list = document.getElementById("menu-list");
-        dom.pageCount = document.getElementById("page-count");
-        dom.tabs = document.querySelector(".tabs");
-        dom.track = document.getElementById("scroll-track");
-        dom.trackInner = document.getElementById("scroll-track-inner");
-        dom.thumb = document.getElementById("scroll-thumb");
-        dom.arrowTop = document.querySelector(".scroll-arrow-top");
-        dom.arrowBottom = document.querySelector(".scroll-arrow-bottom");
-        dom.biName = document.getElementById("bi-name");
-        dom.biSub = document.getElementById("bi-sub");
-        dom.biAvatar = document.getElementById("bi-avatar");
-        dom.toastStack = document.getElementById("toast-stack");
-    }
-
-    /* ───────────────────────── HTML escaping ───────────────────────── */
-    function esc(str) {
-        return String(str == null ? "" : str)
-            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;");
-    }
-
-    /* ============================================================================
-     *  VIEW — renders pages, items, highlight, scrollbar, header, toasts
-     * ==========================================================================*/
-    var View = (function () {
-        var MENU_MAX_HEIGHT = 420;
-        var MENU_MIN_HEIGHT = 0;
-
-        /* 1 = Normal, 2 = Smooth, 3 = Very Smooth */
-        var scrollMode = 1;
-        var selectorMode = 3;
-        var SCROLL_LERP = { 1: 1, 2: 0.38, 3: 0.12 };
-        var SEL_MS = { 1: 72, 2: 24, 3: 0 };
-        var PAGE_OUT_MS = 0;
-        var PAGE_IN_MS = 0;
-
-        var currentItems = [];
-        var activeIndex = -1;
-        var transitioning = false;
-        var scrollLoop = { raf: null, target: 0 };
-        var skipScrollSync = false;
-
-        /* ---- Helper to convert FontAwesome classes to FA Solid SVG paths ---- */
-        function getIconSvg(cls) {
-            if (!cls) return "";
-            var p = "", vb = "0 0 512 512";
-            if (cls.indexOf("fa-user") > -1) { vb = "0 0 448 512"; p = "M224 256A128 128 0 1 0 224 0a128 128 0 1 0 0 256zm-45.7 48C79.8 304 0 383.8 0 482.3C0 498.7 13.3 512 29.7 512H418.3c16.4 0 29.7-13.3 29.7-29.7C448 383.8 368.2 304 269.7 304H178.3z"; }
-            else if (cls.indexOf("fa-eye") > -1) { vb = "0 0 576 512"; p = "M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 92.9-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.8-35.7-46.1-87.7-92.9-131.1C433.5 68.8 368.8 32 288 32zM144 256a144 144 0 1 1 288 0 144 144 0 1 1 -288 0zm144-64c0 35.3-28.7 64-64 64c-7.1 0-13.9-1.2-20.3-3.3c-5.5-1.8-11.9 1.6-11.7 7.5c.5 14.5 5.3 28.3 13.6 39.7C228.4 326.8 256 344 288 344c48.6 0 88-39.4 88-88c0-48.6-39.4-88-88-88c-10.4 0-20.3 1.8-29.5 5.1c-5.7 2.1-7.7 9.1-4 13.9c10 12.8 15.5 28.5 15.5 45z"; }
-            else if (cls.indexOf("fa-gun") > -1) { vb = "0 0 576 512"; p = "M528 56c0-13.3-10.7-24-24-24s-24 10.7-24 24v8H32C14.3 64 0 78.3 0 96V208c0 17.7 14.3 32 32 32H42c20.8 0 36.1 19.6 31 39.8L33 440.2c-2.4 9.6-.2 19.7 5.8 27.5S54.1 480 64 480h96c14.7 0 27.5-10 31-24.2L217 352H321.4c23.7 0 44.8-14.9 52.7-37.2L400.9 240H432c8.5 0 16.6-3.4 22.6-9.4L477.3 208H544c17.7 0 32-14.3 32-32V96c0-17.7-14.3-32-32-32H528V56zM321.4 304H229l16-64h105l-21 58.7c-1.1 3.2-4.2 5.3-7.5 5.3zM80 128H464c8.8 0 16 7.2 16 16s-7.2 16-16 16H80c-8.8 0-16-7.2-16-16s7.2-16 16-16z"; }
-            else if (cls.indexOf("fa-crosshairs") > -1) { vb = "0 0 512 512"; p = "M256 0c17.7 0 32 14.3 32 32V42.4c93.7 13.9 167.7 88 181.6 181.6H480c17.7 0 32 14.3 32 32s-14.3 32-32 32H469.6c-13.9 93.7-88 167.7-181.6 181.6V480c0 17.7-14.3 32-32 32s-32-14.3-32-32V469.6C130.3 455.7 56.3 381.7 42.4 288H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H42.4C56.3 130.3 130.3 56.3 224 42.4V32c0-17.7 14.3-32 32-32zM107.4 288c12.5 58.3 58.4 104.1 116.6 116.6V384c0-17.7 14.3-32 32-32s32 14.3 32 32v20.6c58.3-12.5 104.1-58.4 116.6-116.6H384c-17.7 0-32-14.3-32-32s14.3-32 32-32h20.6C392.1 165.7 346.3 119.9 288 107.4V128c0 17.7-14.3 32-32 32s-32-14.3-32-32V107.4C165.7 119.9 119.9 165.7 107.4 224H128c17.7 0 32 14.3 32 32s-14.3 32-32 32H107.4zM256 224a32 32 0 1 1 0 64 32 32 0 1 1 0-64z"; }
-            else if (cls.indexOf("fa-burst") > -1) { vb = "0 0 512 512"; p = "M37.6 4.2C28-2.3 15.2-1.1 7 7s-9.4 21-2.8 30.5l112 163.3L16.6 233.2C6.7 236.4 0 245.6 0 256s6.7 19.6 16.6 22.8l103.1 33.4L66.8 412.8c-4.9 9.3-3.2 20.7 4.3 28.1s18.8 9.2 28.1 4.3l100.6-52.9 33.4 103.1c3.2 9.9 12.4 16.6 22.8 16.6s19.6-6.7 22.8-16.6l33.4-103.1 100.6 52.9c9.3 4.9 20.7 3.2 28.1-4.3s9.2-18.8 4.3-28.1L392.3 312.2l103.1-33.4c9.9-3.2 16.6-12.4 16.6-22.8s-6.7-19.6-16.6-22.8L388.9 198.7l25.7-70.4c3.2-8.8 1-18.6-5.6-25.2s-16.4-8.8-25.2-5.6l-70.4 25.7L278.8 16.6C275.6 6.7 266.4 0 256 0s-19.6 6.7-22.8 16.6l-32.3 99.6L37.6 4.2z"; }
-            else if (cls.indexOf("fa-car") > -1) { vb = "0 0 512 512"; p = "M135.2 117.4L109.1 192H402.9l-26.1-74.6C372.3 104.6 360.2 96 346.6 96H165.4c-13.6 0-25.7 8.6-30.2 21.4zM39.6 196.8L74.8 96.3C88.3 57.8 124.6 32 165.4 32H346.6c40.8 0 77.1 25.8 90.6 64.3l35.2 100.5c23.2 9.6 39.6 32.5 39.6 59.2V400v48c0 17.7-14.3 32-32 32H448c-17.7 0-32-14.3-32-32V400H96v48c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32V400 256c0-26.7 16.4-49.6 39.6-59.2zM128 288a32 32 0 1 0 -64 0 32 32 0 1 0 64 0zm288 32a32 32 0 1 0 0-64 32 32 0 1 0 0 64z"; }
-            else if (cls.indexOf("fa-gear") > -1) { vb = "0 0 512 512"; p = "M495.9 166.6c3.2 8.7 .5 18.4-6.4 24.6l-43.3 39.4c1.1 8.3 1.7 16.8 1.7 25.4s-.6 17.1-1.7 25.4l43.3 39.4c6.9 6.2 9.6 15.9 6.4 24.6c-4.4 11.9-9.7 23.3-15.8 34.3l-4.7 8.1c-6.6 11-14 21.4-22.1 31.2c-5.9 7.2-15.7 9.6-24.5 6.8l-55.7-17.7c-13.4 10.3-28.2 18.9-44 25.4l-12.5 57.1c-2 9.1-9 16.3-18.2 17.8c-13.8 2.3-28 3.5-42.5 3.5s-28.7-1.2-42.5-3.5c-9.2-1.5-16.2-8.7-18.2-17.8l-12.5-57.1c-15.8-6.5-30.6-15.1-44-25.4L83.1 425.9c-8.8 2.8-18.6 .3-24.5-6.8c-8.1-9.8-15.5-20.2-22.1-31.2l-4.7-8.1c-6.1-11-11.4-22.4-15.8-34.3c-3.2-8.7-.5-18.4 6.4-24.6l43.3-39.4C64.6 273.1 64 264.6 64 256s.6-17.1 1.7-25.4L22.4 191.2c-6.9-6.2-9.6-15.9-6.4-24.6c4.4-11.9 9.7-23.3 15.8-34.3l4.7-8.1c6.6-11 14-21.4 22.1-31.2c5.9-7.2 15.7-9.6 24.5-6.8l55.7 17.7c13.4-10.3 28.2-18.9 44-25.4l12.5-57.1c2-9.1 9-16.3 18.2-17.8C227.3 1.2 241.5 0 256 0s28.7 1.2 42.5 3.5c9.2 1.5 16.2 8.7 18.2 17.8l12.5 57.1c15.8 6.5 30.6 15.1 44 25.4l55.7-17.7c8.8-2.8 18.6-.3 24.5 6.8c8.1 9.8 15.5 20.2 22.1 31.2l4.7 8.1c6.1 11 11.4 22.4 15.8 34.3zM256 336a80 80 0 1 0 0-160 80 80 0 1 0 0 160z"; }
-            else if (cls.indexOf("fa-shield") > -1) { vb = "0 0 512 512"; p = "M256 0c-4.1 0-8.1 1.4-11.3 4.1L32 188.7c-18.4 15.6-32 37.8-32 63.3V384c0 47.9 28 92.1 72.4 112l161.4 72.8c7.4 3.4 16 3.4 23.4 0l161.4-72.8c44.4-20 72.4-64.1 72.4-112V252c0-25.5-13.6-47.7-32-63.3L267.3 4.1C264.1 1.4 260.1 0 256 0zm0 464V48L464 220v164L256 464z"; }
-            else if (cls.indexOf("fa-users") > -1) { vb = "0 0 640 512"; p = "M144 0a80 80 0 1 1 0 160 80 80 0 1 1 0-160zM512 0a80 80 0 1 1 0 160 80 80 0 1 1 0-160zM0 512c0-70.7 57.3-128 128-128h64c70.7 0 128 57.3 128 128H0zM384 384c70.7 0 128 57.3 128 128H384c0-70.7 57.3-128 128-128h64z"; }
-            else if (cls.indexOf("fa-earth") > -1) { vb = "0 0 512 512"; p = "M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM177.7 321.1c-11.8-35.6 7.5-73.9 42.2-85.7l87.7-29.1c15.2-5.1 31.7-1.5 43.5 9.4l49.4 45.4c12.2 11.2 15.8 28.8 9 43.9l-25.8 57.4c-8.6 19.1-28.3 30.3-49.1 27.6l-67.2-9.1c-22.3-3-39.8-20.5-42.7-42.7zM256 96c-53 0-96 43-96 96h192c0-53-43-96-96-96z"; }
-            else if (cls.indexOf("fa-toolbox") > -1) { vb = "0 0 512 512"; p = "M176 88V56c0-13.3 10.7-24 24-24h112c13.3 0 24 10.7 24 24v32h56c35.3 0 64 28.7 64 64v336c0 35.3-28.7 64-64 64H120c-35.3 0-64-28.7-64-64V152c0-35.3 28.7-64 64-64h56zM200 56v32h112V56H200zm-88 96c-17.7 0-32 14.3-32 32v56h352v-56c0-17.7-14.3-32-32-32H112zm352 112H80v200c0 17.7 14.3 32 32 32h288c17.7 0 32-14.3 32-32V264z"; }
-            else if (cls.indexOf("fa-code") > -1) { vb = "0 0 640 512"; p = "M278.9 511.5l-61-17.7c-6.4-1.8-10-8.2-8.2-14.6L348.5 86.5c1.8-6.4 8.2-10 14.6-8.2l61 17.7c6.4 1.8 10 8.2 8.2 14.6L293.5 503.3c-1.8 6.4-8.2 10-14.6 8.2zm-114-112.2l-61-17.7c-6.4-1.8-10-8.2-8.2-14.6L112.5 19.1c1.8-6.4 8.2-10 14.6-8.2l61 17.7c6.4 1.8 10 8.2 8.2 14.6L179.5 387.1c-1.8 6.4-8.2 10-14.6 8.2z"; }
-            else if (cls.indexOf("fa-person") > -1 && cls.indexOf("fa-person-running") === -1) { vb = "0 0 448 512"; p = "M320 48a48 48 0 1 0 -96 0 48 48 0 1 0 96 0zM125.7 175.5c9.9-9.9 23.4-15.5 37.5-15.5c1.9 0 3.8 .1 5.6 .3L137.6 96c-4.3-17 4.1-34.9 20.3-40.8s33.8 1.4 41.5 17.5l56 116.6c7.4 15.4 6 33.6-3.8 47.8l-45.1 65.2 25.1 50.2 67.2-33.6c15.8-7.9 34.8-1.5 42.7 14.3s1.5 34.8-14.3 42.7l-96 48c-9.1 4.5-19.8 4-28.5-1.4L136 328l-40.4 40.4c-11.4 11.4-29.4 12.8-42.4 3.1s-14.4-28.4-3.1-41.4l51.1-51.1-37-74-45 15c-16.7 5.6-34.9-3.4-40.5-20.1s3.4-34.9 20.1-40.5l72-24c13.4-4.5 28.3-.9 38.2 9l34.8 34.8-21.1-30.5c-4.2-6.1-4.7-14.1-1.3-20.7l22.3-43.2z"; }
-            else if (cls.indexOf("fa-gauge") > -1) { vb = "0 0 512 512"; p = "M0 256a256 256 0 1 1 512 0A256 256 0 1 1 0 256zm320 96c0-26.9-16.5-49.9-40-59.3V88c0-13.3-10.7-24-24-24s-24 10.7-24 24v204.7c-23.5 9.5-40 32.5-40 59.3c0 35.3 28.7 64 64 64s64-28.7 64-64zM144 176a32 32 0 1 0 0-64 32 32 0 1 0 0 64zm-16 80a32 32 0 1 0 -64 0 32 32 0 1 0 64 0zm256-80a32 32 0 1 0 0-64 32 32 0 1 0 0 64zm16 80a32 32 0 1 0 -64 0 32 32 0 1 0 64 0z"; }
-            else if (cls.indexOf("fa-kit-medical") > -1 || cls.indexOf("fa-briefcase") > -1) { vb = "0 0 512 512"; p = "M144 112V64c0-35.3 28.7-64 64-64h96c35.3 0 64 28.7 64 64v48h80c35.3 0 64 28.7 64 64v256c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V176c0-35.3 28.7-64 64-64h80zM208 64v48h96V64H208zM192 256v64H128c-17.7 0-32 14.3-32 32s14.3 32 32 32h64v64c0 17.7 14.3 32 32 32s32-14.3 32-32v-64h64c17.7 0 32-14.3 32-32s-14.3-32-32-32h-64v-64c0-17.7-14.3-32-32-32s-32 14.3-32 32z"; }
-            else if (cls.indexOf("fa-video") > -1) { vb = "0 0 576 512"; p = "M0 128C0 92.7 28.7 64 64 64H320c35.3 0 64 28.7 64 64V384c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V128zM559.1 99.8c10.4 5.6 16.9 16.4 16.9 28.2V384c0 11.8-6.5 22.6-16.9 28.2s-23 5-32.9-1.6l-96-64L416 337.1V320 192 174.9l14.2-9.5 96-64c9.8-6.5 22.4-7.2 32.9-1.6z"; }
-            else if (cls.indexOf("fa-clock") > -1) { vb = "0 0 512 512"; p = "M256 0a256 256 0 1 1 0 512A256 256 0 1 1 256 0zM232 120V256c0 8 4 15.5 10.7 20l96 64c11 7.4 25.9 4.4 33.3-6.7s4.4-25.9-6.7-33.3L280 243.2V120c0-13.3-10.7-24-24-24s-24 10.7-24 24z"; }
-            else if (cls.indexOf("fa-palette") > -1) { vb = "0 0 512 512"; p = "M512 256c0 .9 0 1.8 0 2.7c-.4 36.5-33.6 61.3-70.1 61.3H344c-26.5 0-48 21.5-48 48c0 3.4 .4 6.7 1 9.9c7.1 38.6-21.1 74.1-60.2 74.1H224c-123.7 0-224-100.3-224-224S100.3 32 224 32s224 100.3 224 224zM112 288a48 48 0 1 0 -96 0 48 48 0 1 0 96 0zm112-80a48 48 0 1 0 0-96 48 48 0 1 0 0 96zm128-48a48 48 0 1 0 -96 0 48 48 0 1 0 96 0zm96 112a48 48 0 1 0 0-96 48 48 0 1 0 0 96z"; }
-            else if (cls.indexOf("fa-rainbow") > -1) { vb = "0 0 512 512"; p = "M0 480C0 338.6 114.6 224 256 224s256 114.6 256 256H448C448 374 362 288 256 288S64 374 64 480H0zM96 480C96 391.6 167.6 320 256 320s160 71.6 160 160H352C352 427 299 384 256 384S160 427 160 480H96zM192 480C192 444.6 220.6 416 256 416S320 444.6 320 480H192z"; }
-            else if (cls.indexOf("fa-id") > -1) { vb = "0 0 384 512"; p = "M64 48c-8.8 0-16 7.2-16 16V448c0 8.8 7.2 16 16 16H320c8.8 0 16-7.2 16-16V64c0-8.8-7.2-16-16-16H64zM0 64C0 28.7 28.7 0 64 0H320c35.3 0 64 28.7 64 64V448c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V64zm192 208a64 64 0 1 1 0-128 64 64 0 1 1 0 128zm0-168a104 104 0 1 0 0 208 104 104 0 1 0 0-208zM128 352h128c26.5 0 48 21.5 48 48v16c0 17.7-14.3 32-32 32H112c-17.7 0-32-14.3-32-32V400c0-26.5 21.5-48 48-48z"; }
-            else if (cls.indexOf("fa-wrench") > -1) { vb = "0 0 512 512"; p = "M393.2 23.4c-35.6-31.1-90.5-27-121.7 8.5c-27.1 30.7-27.1 76 0 106.7L18.6 391.6c-24.8 24.8-24.8 65.1 0 89.9s65.1 24.8 89.9 0L361.3 228.6c30.7 27.1 76 27.1 106.7 0c35.6-31.1 39.7-86 8.5-121.7L426 157.4l-58.4-58.4L418.1 48.6 393.2 23.4zM324.9 154l58.4 58.4 48.6-48.6L373.5 105.4 324.9 154z"; }
-            else if (cls.indexOf("fa-bolt") > -1 || cls.indexOf("fa-lightning") > -1) { vb = "0 0 320 512"; p = "M319.6 153.9c-.3-8.4-7.5-15.1-15.9-15.1l-143.7 0 54.4-118c2.9-6.3 .2-13.8-6.1-16.7s-13.8-.2-16.7 6.1L2.8 316.5c-4.4 9.5-.2 20.9 9.3 25.3c1.5 .7 3.2 1.2 4.9 1.4l148 11.2-54.4 118c-2.9 6.3-.2 13.8 6.1 16.7c1.7 .8 3.5 1.1 5.3 1.1c4.5 0 8.8-2.6 10.8-7l188.8-306.4c3.4-5.5 2.6-12.7-1.9-17.2s-10.4-5.8-16.1-4.7l-156.4 30.1 55.4-120.1z"; }
-            else if (cls.indexOf("fa-keyboard") > -1) { vb = "0 0 576 512"; p = "M64 64C28.7 64 0 92.7 0 128V384c0 35.3 28.7 64 64 64H512c35.3 0 64-28.7 64-64V128c0-35.3-28.7-64-64-64H64zM224 400H128c-17.7 0-32-14.3-32-32s14.3-32 32-32h96c17.7 0 32 14.3 32 32s-14.3 32-32 32zm48-96c-17.7 0-32-14.3-32-32s14.3-32 32-32s32 14.3 32 32s-14.3 32-32 32zm128 0c-17.7 0-32-14.3-32-32s14.3-32 32-32s32 14.3 32 32s-14.3 32-32 32zm64-96c-17.7 0-32-14.3-32-32s14.3-32 32-32s32 14.3 32 32s-14.3 32-32 32z"; }
-            else if (cls.indexOf("fa-discord") > -1) { vb = "0 0 640 512"; p = "M524.5 69.8a1.5 1.5 0 0 0 -.8-.7A485.1 485.1 0 0 0 404.1 32a1.8 1.8 0 0 0 -1.9 .9 337.5 337.5 0 0 0 -14.9 30.6 447.8 447.8 0 0 0 -134.4 0 309.5 309.5 0 0 0 -15.1-30.6 1.9 1.9 0 0 0 -1.9-.9A483.7 483.7 0 0 0 116.1 69.1a1.7 1.7 0 0 0 -.8 .7C39.1 183.7 18.2 294.7 28.4 404.4a2 2 0 0 0 .8 1.4A487.7 487.7 0 0 0 176 479.9a1.9 1.9 0 0 0 2.1-.7A348.2 348.2 0 0 0 208.1 430.4a1.9 1.9 0 0 0 -1-2.6 321.2 321.2 0 0 1 -45.9-21.9 1.9 1.9 0 0 1 -.2-3.1c3.1-2.3 6.2-4.7 9.1-7.1a1.8 1.8 0 0 1 1.9-.3c96.2 43.9 200.4 43.9 295.5 0a1.8 1.8 0 0 1 1.9 .2c2.9 2.4 6 4.9 9.1 7.2a1.9 1.9 0 0 1 -.2 3.1 301.4 301.4 0 0 1 -45.9 21.8 1.9 1.9 0 0 0 -1 2.6 391 391 0 0 0 30 48.8 1.9 1.9 0 0 0 2.1 .7A486 486 0 0 0 610.7 405.7a1.9 1.9 0 0 0 .8-1.4C623.7 277.6 590.9 167.5 524.5 69.8zM222.5 337.6c-29 0-52.8-26.6-52.8-59.2S193.1 219.1 222.5 219.1c29.7 0 53.3 26.8 52.8 59.2C275.3 311 251.9 337.6 222.5 337.6zm195.4 0c-29 0-52.8-26.6-52.8-59.2S388.4 219.1 417.9 219.1c29.7 0 53.3 26.8 52.8 59.2C470.7 311 447.5 337.6 417.9 337.6z"; }
-            else p = "M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512z";
-            return '<svg class="menu-svg-icon" viewBox="' + vb + '" fill="currentColor">' + '<path d="' + p + '"></path></svg>';
-        }
-
-        /* ---- Item markup builder (superset of every supported control) ---- */
-        function buildItemHtml(item, i) {
-            if (item.type === "separator") {
-                return '<div class="menu-separator" data-index="' + i + '">' +
-                    '<span class="separator-line"></span>' +
-                    '<span class="separator-text">' + esc(item.label) + '</span>' +
-                    '<span class="separator-line"></span>' +
-                    '</div>';
-            }
-
-            var right = "";
-            switch (item.type) {
-                case "submenu":
-                    right = '<span class="item-arrow" aria-hidden="true">&gt;</span>';
-                    break;
-                case "toggle":
-                    right = '<div class="toggle-switch ' + (item.value ? "on" : "") + '"><div class="toggle-knob"></div></div>';
-                    break;
-                case "slider": {
-                    var span = (item.max - item.min) || 1;
-                    var pct = ((item.value - item.min) / span) * 100;
-                    right = '<div class="slider-container">' +
-                        '<div class="slider-track"><div class="slider-fill" style="width:' + pct + '%"></div></div>' +
-                        '<span class="slider-value">' + esc(item.value) + esc(item.unit || "") + '</span>' +
-                        '</div>';
-                    break;
-                }
-                case "action":
-                    right = '<span class="item-arrow item-arrow--dim" aria-hidden="true">&gt;</span>';
-                    break;
-                case "array": {
-                    var label = (item.options && item.options[item.value] != null)
-                        ? item.options[item.value] : "";
-                    right = '<div class="array-container">' +
-                        '<span class="array-arrow left-arrow">‹</span>' +
-                        '<span class="array-value">' + esc(label) + '</span>' +
-                        '<span class="array-arrow right-arrow">›</span>' +
-                        '</div>';
-                    break;
-                }
-                case "value":
-                    right = '<div class="array-container">' +
-                        '<span class="array-arrow left-arrow">‹</span>' +
-                        '<span class="array-value">' + esc(item.valueStr) + '</span>' +
-                        '<span class="array-arrow right-arrow">›</span>' +
-                        '</div>';
-                    break;
-                case "color":
-                    right = '<div class="color-preview" style="background-color:' + esc(item.value) + '"></div>';
-                    break;
-                case "info":
-                    right = '<span class="info-value">' + esc(item.valueStr) + '</span>';
-                    break;
-                case "keybind":
-                    right = '<span class="keybind-badge' + (item.listening ? " listening" : "") + '">' +
-                        esc(item.listening ? "..." : (item.keyStr || "—")) + '</span>';
-                    break;
-            }
-
-            var iconHtml = (item.type === "submenu" && item.icon)
-                ? '<span class="item-icon">' + getIconSvg(item.icon) + '</span>' : "";
-
-            var nameHtml;
-            if (item.desc) {
-                nameHtml = '<span class="item-name-wrap">' +
-                    '<span class="item-name">' + esc(item.label) + '</span>' +
-                    '<span class="item-desc">' + esc(item.desc) + '</span>' +
-                    '</span>';
-            } else {
-                nameHtml = '<span class="item-name">' + esc(item.label) + '</span>';
-            }
-
-            // Optional keybind badge (shown when a feature is bound, or while
-            // listening for a key after F11). Appears just left of the control.
-            var bindHtml = "";
-            if (item.listening) {
-                bindHtml = '<span class="bind-badge listening">[ press key ]</span>';
-            } else if (item.bind || item.keyStr) {
-                bindHtml = '<span class="bind-badge">' + esc(item.bind || item.keyStr) + '</span>';
-            }
-
-            var cls = "menu-item" + (item.type === "info" ? " is-info" : "");
-            return '<div class="' + cls + '" data-index="' + i + '">' +
-                   iconHtml + nameHtml + bindHtml + right + '</div>';
-        }
-
-        function getScrollLerp() {
-            return SCROLL_LERP[scrollMode] != null ? SCROLL_LERP[scrollMode] : SCROLL_LERP[2];
-        }
-
-        function getSelectorMs() {
-            return SEL_MS[selectorMode] != null ? SEL_MS[selectorMode] : 0;
-        }
-
-        function setScrollMode(mode) {
-            var m = parseInt(mode, 10);
-            scrollMode = (m >= 1 && m <= 3) ? m : 1;
-        }
-
-        function setMenuSpeed(mode) {
-            var m = parseInt(mode, 10);
-            selectorMode = (m >= 1 && m <= 3) ? m : 3;
-        }
-
-        function stopScrollLoop() {
-            if (scrollLoop.raf) {
-                cancelAnimationFrame(scrollLoop.raf);
-                scrollLoop.raf = null;
-            }
-        }
-
-        function computeScrollTarget(node) {
-            if (!node || !dom.list) return 0;
-            var list = dom.list;
-            var pad = 10;
-            var itemTop = node.offsetTop;
-            var itemH = node.offsetHeight;
-            var viewH = list.clientHeight;
-            var maxScroll = Math.max(0, list.scrollHeight - viewH);
-            var st = list.scrollTop;
-            var itemBottom = itemTop + itemH;
-            var viewBottom = st + viewH;
-            if (itemTop < st + pad) return Math.max(0, itemTop - pad);
-            if (itemBottom > viewBottom - pad) return Math.min(maxScroll, itemBottom - viewH + pad);
-            return st;
-        }
-
-        function runScrollLoop() {
-            if (!dom.list) return;
-            var lerp = getScrollLerp();
-            if (lerp >= 1) {
-                dom.list.scrollTop = scrollLoop.target;
-                stopScrollLoop();
-                skipScrollSync = false;
-                updateScrollbar();
-                return;
-            }
-            var current = dom.list.scrollTop;
-            var diff = scrollLoop.target - current;
-            if (Math.abs(diff) < 0.5) {
-                dom.list.scrollTop = scrollLoop.target;
-                stopScrollLoop();
-                skipScrollSync = false;
-                updateScrollbar();
-                return;
-            }
-            dom.list.scrollTop = current + diff * lerp;
-            updateScrollbar();
-            scrollLoop.raf = requestAnimationFrame(runScrollLoop);
-        }
-
-        function scrollToNode(node, instant) {
-            if (!node || !dom.list) return;
-            scrollLoop.target = computeScrollTarget(node);
-            stopScrollLoop();
-            skipScrollSync = true;
-            if (instant || getScrollLerp() >= 1) {
-                dom.list.scrollTop = scrollLoop.target;
-                skipScrollSync = false;
-                updateScrollbar();
-                return;
-            }
-            runScrollLoop();
-        }
-
-        function selectorTopForNode(node) {
-            if (!node) return 0;
-            var base = dom.contentMain || dom.content;
-            if (!base) return 0;
-            var baseRect = base.getBoundingClientRect();
-            var nodeRect = node.getBoundingClientRect();
-            return nodeRect.top - baseRect.top;
-        }
-
-        function syncSelectorToActive(animate) {
-            if (!dom.list || !dom.selector) return;
-            var node = dom.list.querySelector('.menu-item[data-index="' + activeIndex + '"]');
-            if (node) syncSelector(node, animate);
-        }
-
-        function bindListScrollSync() {
-            if (!dom.list || dom.list._selScrollBound) return;
-            dom.list._selScrollBound = true;
-            dom.list.addEventListener("scroll", function () {
-                if (transitioning || skipScrollSync) return;
-                syncSelectorToActive(false);
-            }, { passive: true });
-        }
-
-        function syncSelector(node, animate) {
-            if (!dom.selector || !node) return;
-            var ms = animate ? getSelectorMs() : 0;
-            dom.selector.style.visibility = "visible";
-            dom.selector.style.transition = ms
-                ? ("top " + ms + "ms cubic-bezier(0.22, 1, 0.36, 1), opacity 0.1s ease")
-                : "none";
-            dom.selector.style.height = node.offsetHeight + "px";
-            dom.selector.style.top = selectorTopForNode(node) + "px";
-            dom.selector.style.opacity = "1";
-        }
-
-        function hideSelector() {
-            if (!dom.selector) return;
-            dom.selector.style.transition = "none";
-            dom.selector.style.opacity = "0";
-            dom.selector.style.visibility = "hidden";
-        }
-
-        function render(items, activeIdx, animateDir, onReady) {
-            bindListScrollSync();
-            currentItems = items || [];
-            var html = "";
-            for (var i = 0; i < currentItems.length; i++) html += buildItemHtml(currentItems[i], i);
-
-            var commit = function (holdSelector) {
-                stopScrollLoop();
-                hideSelector();
-                dom.list.innerHTML = html;
-                dom.list.scrollTop = 0;
-                setActive(activeIdx, true, true, !!holdSelector);
-                adjustHeight();
-                if (onReady) onReady();
-            };
-
-            if (animateDir && dom.viewport && !document.body.classList.contains("dui-mode")) {
-                transitioning = true;
-                hideSelector();
-                var fwd = animateDir === "forward";
-                dom.viewport.classList.remove(
-                    "page-out-forward", "page-out-backward",
-                    "page-in-forward", "page-in-backward"
-                );
-                dom.viewport.style.opacity = "";
-                dom.viewport.style.transform = "";
-                dom.viewport.style.filter = "";
-                dom.viewport.classList.add(fwd ? "page-out-forward" : "page-out-backward");
-                setTimeout(function () {
-                    commit(true);
-                    dom.viewport.classList.remove("page-out-forward", "page-out-backward");
-                    void dom.viewport.offsetWidth;
-                    dom.viewport.classList.add(fwd ? "page-in-forward" : "page-in-backward");
-                    requestAnimationFrame(function () {
-                        requestAnimationFrame(function () {
-                            syncSelectorToActive(true);
-                        });
-                    });
-                    setTimeout(function () {
-                        dom.viewport.classList.remove("page-in-forward", "page-in-backward");
-                        dom.viewport.style.opacity = "";
-                        dom.viewport.style.transform = "";
-                        dom.viewport.style.filter = "";
-                        syncSelectorToActive(false);
-                        transitioning = false;
-                    }, PAGE_IN_MS);
-                }, PAGE_OUT_MS);
-            } else {
-                if (dom.viewport) {
-                    dom.viewport.classList.remove(
-                        "page-out-forward", "page-out-backward",
-                        "page-in-forward", "page-in-backward"
-                    );
-                    dom.viewport.style.opacity = "";
-                    dom.viewport.style.transform = "";
-                    dom.viewport.style.filter = "";
-                }
-                commit(false);
-            }
-        }
-
-        function setActive(index, instantScroll, instantSelector, holdSelector) {
-            index = parseInt(index, 10);
-            if (isNaN(index) || index < 0) index = 0;
-            if (!holdSelector && index === activeIndex && dom.list) {
-                var cur = dom.list.querySelector('.menu-item[data-index="' + index + '"]');
-                if (cur) {
-                    syncSelector(cur, false);
-                    scrollToNode(cur, true);
-                    updatePageCount();
-                    updateScrollbar();
-                    return;
-                }
-            }
-
-            var nodes = dom.list ? dom.list.children : [];
-            var activeNode = null;
-            for (var i = 0; i < nodes.length; i++) {
-                if (!nodes[i].classList.contains("menu-item")) continue;
-                var idx = parseInt(nodes[i].getAttribute("data-index"), 10);
-                if (idx === index) {
-                    nodes[i].classList.add("active");
-                    activeNode = nodes[i];
-                } else {
-                    nodes[i].classList.remove("active");
-                }
-            }
-            activeIndex = index;
-            if (!activeNode) {
-                hideSelector();
-                updatePageCount();
-                updateScrollbar();
-                return;
-            }
-            if (!holdSelector) {
-                syncSelector(activeNode, !instantSelector && getSelectorMs() > 0);
-            }
-            scrollToNode(activeNode, !!instantScroll);
-            updatePageCount();
-            updateScrollbar();
-        }
-
-        function updatePageCount() {
-            if (!dom.pageCount) return;
-            var total = 0, num = 0;
-            for (var j = 0; j < currentItems.length; j++) {
-                if (currentItems[j].type !== "separator") {
-                    total++;
-                    if (j === activeIndex) num = total;
-                }
-            }
-            dom.pageCount.textContent = (total ? num : 0) + "/" + total;
-        }
-
-        function nodeForItemIndex(index) {
-            if (!dom.list) return null;
-            var node = dom.list.querySelector('.menu-item[data-index="' + index + '"]');
-            if (node) return node;
-            return dom.list.children[index] || null;
-        }
-
-        function refreshBindBadge(node, item) {
-            if (!node || !item) return;
-            if (item.type !== "toggle" && item.type !== "action") return;
-
-            var label = item.listening ? null : (item.bind || item.keyStr || null);
-            if (label === "" || label === false) label = null;
-            var existing = node.querySelector(".bind-badge");
-
-            if (item.listening) {
-                if (!existing) {
-                    existing = document.createElement("span");
-                    var ctrl = node.querySelector(".toggle-switch, .item-arrow");
-                    node.insertBefore(existing, ctrl || null);
-                }
-                existing.textContent = "[ press key ]";
-                existing.className = "bind-badge listening";
-                return;
-            }
-
-            if (label) {
-                if (!existing) {
-                    existing = document.createElement("span");
-                    var ctrl2 = node.querySelector(".toggle-switch, .item-arrow");
-                    node.insertBefore(existing, ctrl2 || null);
-                }
-                existing.textContent = label;
-                existing.className = "bind-badge";
-            } else if (existing) {
-                existing.parentNode.removeChild(existing);
-            }
-        }
-
-        /* Patch a single item's control in place (no full re-render) */
-        function updateItem(index, patch) {
-            var item = currentItems[index];
-            var node = nodeForItemIndex(index);
-            if (!item || !node) return;
-            for (var k in patch) if (patch.hasOwnProperty(k)) item[k] = patch[k];
-
-            if (item.type === "toggle") {
-                if (patch.hasOwnProperty("value")) item.value = !!patch.value;
-                var sw = node.querySelector(".toggle-switch");
-                if (sw) {
-                    sw.classList.toggle("on", !!item.value);
-                }
-            } else if (item.type === "slider") {
-                var span = (item.max - item.min) || 1;
-                var pct = ((item.value - item.min) / span) * 100;
-                var fill = node.querySelector(".slider-fill");
-                var val = node.querySelector(".slider-value");
-                if (fill) fill.style.width = pct + "%";
-                if (val) val.textContent = item.value + (item.unit || "");
-            } else if (item.type === "array") {
-                var av = node.querySelector(".array-value");
-                if (av && item.options) av.textContent = item.options[item.value] != null ? item.options[item.value] : "";
-            } else if (item.type === "value") {
-                var vv = node.querySelector(".array-value");
-                if (vv) vv.textContent = item.valueStr;
-            } else if (item.type === "color") {
-                var sw2 = node.querySelector(".color-preview");
-                if (sw2) sw2.style.backgroundColor = item.value;
-            } else if (item.type === "info") {
-                var iv = node.querySelector(".info-value");
-                if (iv) iv.textContent = item.valueStr;
-            } else if (item.type === "keybind") {
-                var kb = node.querySelector(".keybind-badge");
-                if (kb) {
-                    kb.classList.toggle("listening", !!item.listening);
-                    kb.textContent = item.listening ? "..." : (item.keyStr || "—");
-                }
-            }
-
-            if (patch.hasOwnProperty("listening")) item.listening = !!patch.listening;
-            if (patch.hasOwnProperty("bind")) item.bind = patch.bind || null;
-            if (patch.hasOwnProperty("keyStr")) item.keyStr = patch.keyStr || null;
-            refreshBindBadge(node, item);
-        }
-
-        function setBindBadge(index, label, listening) {
-            var item = currentItems[index];
-            var node = nodeForItemIndex(index);
-            if (!item || !node) return;
-            item.listening = !!listening;
-            if (label && label !== "") {
-                item.bind = label;
-                item.keyStr = label;
-            } else {
-                item.bind = null;
-                item.keyStr = null;
-            }
-            refreshBindBadge(node, item);
-        }
-
-        function pressFeedback(index) {
-            var node = nodeForItemIndex(index);
-            if (!node) return;
-            node.classList.add("pressed");
-            setTimeout(function () { if (node) node.classList.remove("pressed"); }, 120);
-        }
-
-        function flashArrow(index, dir) {
-            var node = dom.list.children[index];
-            if (!node) return;
-            var arrow = node.querySelector(dir === "left" ? ".left-arrow" : ".right-arrow");
-            if (arrow) {
-                arrow.classList.add("pressed");
-                setTimeout(function () { if (arrow) arrow.classList.remove("pressed"); }, 100);
-            }
-        }
-
-        function measureListContentHeight() {
-            if (!dom.list) return MENU_MIN_HEIGHT;
-            var sum = 0;
-            var kids = dom.list.children;
-            for (var i = 0; i < kids.length; i++) {
-                sum += kids[i].offsetHeight || 0;
-            }
-            var cs = window.getComputedStyle(dom.list);
-            var pad = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
-            return sum + pad;
-        }
-
-        /* ---- Dynamic height + custom scrollbar ---- */
-        function adjustHeight() {
-            if (!dom.list) return;
-            dom.list.style.height = "auto";
-            dom.list.style.maxHeight = "none";
-            dom.list.style.overflowY = "hidden";
-            var content = measureListContentHeight();
-            var h = content;
-            var needsScroll = content > MENU_MAX_HEIGHT;
-            if (needsScroll) h = MENU_MAX_HEIGHT;
-            if (h < MENU_MIN_HEIGHT) h = MENU_MIN_HEIGHT;
-            dom.list.style.height = h + "px";
-            dom.list.style.maxHeight = needsScroll ? (MENU_MAX_HEIGHT + "px") : "none";
-            dom.list.style.overflowY = needsScroll ? "auto" : "hidden";
-            if (dom.viewport) {
-                dom.viewport.style.height = h + "px";
-                dom.viewport.style.minHeight = "0";
-            }
-            if (dom.content) dom.content.style.minHeight = "0";
-            requestAnimationFrame(function () {
-                updateScrollbar();
-                var node = dom.list.querySelector('.menu-item[data-index="' + activeIndex + '"]');
-                if (node && dom.selector && dom.selector.style.opacity !== "0") {
-                    syncSelector(node, false);
+/* ---- Update player action buttons based on selected player ---- */
+function updatePlayerOptionsUI() {
+    const onlineItems = menuData.online.default;
+    const targetGroupIds = ["Player Options", "Attachs", "Extras"];
+    const suffix = selectedPlayerId !== null ? ` [${selectedPlayerName || selectedPlayerId}]` : "";
+    
+    const baseLabels = {
+        spectate: "Spectate Player",
+        follow_player: "Follow Player",
+        talk_to: "Talk To Player",
+        bring_player: "Bring Player [Client-Side]",
+        copy_ped: "Copy Ped",
+        teleport_to: "Teleport",
+        attach_me: "Attach Me To Player",
+        sex_player: "Sex Player",
+        get_control: "Get Control",
+        clear_vehicles: "Clear Vehicles"
+    };
+    
+    onlineItems.forEach(group => {
+        if (targetGroupIds.includes(group.group)) {
+            group.items.forEach(item => {
+                if (baseLabels[item.id]) {
+                    item.label = baseLabels[item.id] + suffix;
                 }
             });
         }
+    });
+    
+    renderContent();
+}
 
-        function listOffsetInContainer() {
-            if (!dom.list || !dom.container) return 0;
-            var top = 0;
-            var el = dom.list;
-            while (el && el !== dom.container) {
-                top += el.offsetTop || 0;
-                el = el.offsetParent;
-            }
-            return top;
-        }
+/* ---- Switch content with crossfade ---- */
+function switchContent() {
+    if (isTransitioning) return;
+    isTransitioning = true;
 
-        function updateScrollbar() {
-            if (!dom.track || !dom.thumb || !dom.list || !dom.trackInner) return;
-            requestAnimationFrame(function () {
-                var sh = dom.list.scrollHeight;
-                var ch = dom.list.clientHeight;
-                var st = dom.list.scrollTop;
-                var trackH = Math.max(ch, 48);
-                dom.track.style.top = listOffsetInContainer() + "px";
-                dom.track.style.height = trackH + "px";
-                dom.trackInner.style.height = Math.max(20, trackH - 32) + "px";
+    tileGrid.classList.add('grid-exit');
+    setTimeout(() => {
+        tileGrid.classList.remove('grid-exit');
+        renderContent();
+        tileGrid.classList.add('grid-enter');
+        setTimeout(() => {
+            tileGrid.classList.remove('grid-enter');
+            isTransitioning = false;
+        }, 300);
+    }, 120);
+}
 
-                if (sh <= ch || ch === 0) {
-                    dom.track.classList.add("is-idle");
-                    dom.thumb.style.height = "100%";
-                    dom.thumb.style.top = "0px";
-                    return;
-                }
-                dom.track.classList.remove("is-idle");
+/* ---- Switch main category ---- */
+function switchCategory(catId) {
+    if (catId === currentCategory && !isTransitioning) return;
+    if (isTransitioning) return;
 
-                var innerH = dom.trackInner.clientHeight;
-                var th = Math.max(24, (ch / sh) * innerH);
-                dom.thumb.style.height = th + "px";
-                var maxTravel = Math.max(0, innerH - th);
-                var maxScroll = sh - ch;
-                var y = maxScroll > 0 ? (st / maxScroll) * maxTravel : 0;
-                dom.thumb.style.top = y + "px";
-            });
-        }
+    currentCategory = catId;
 
-        /* ---- Tabs ---- */
-        function renderTabs(tabs, activeId, onClick) {
-            var html = "";
-            for (var i = 0; i < tabs.length; i++) {
-                html += '<div class="tab' + (tabs[i].id === activeId ? " active" : "") +
-                    '" data-tab="' + esc(tabs[i].id) + '">' + esc(tabs[i].label) + '</div>';
-            }
-            dom.tabs.innerHTML = html;
-            if (onClick) {
-                var els = dom.tabs.querySelectorAll(".tab");
-                for (var j = 0; j < els.length; j++) {
-                    (function (id) {
-                        els[j].addEventListener("click", function () { onClick(id); });
-                    })(els[j].getAttribute("data-tab"));
-                }
-            }
-        }
-
-        /* ---- Header identity ---- */
-        function setHeader(data) {
-            if (data.name != null && dom.biName) dom.biName.textContent = data.name;
-            if (data.sub != null && dom.biSub) dom.biSub.textContent = data.sub;
-            if (data.avatar && dom.biAvatar) dom.biAvatar.src = data.avatar;
-            if (data.brand != null) {
-                var brandEl = document.getElementById("banner-brand");
-                if (brandEl) brandEl.textContent = String(data.brand).toUpperCase();
-            }
-        }
-
-        /* ---- Visibility ---- */
-        function setVisible(visible) {
-            if (!dom.container) return;
-            dom.container.classList.toggle("hidden", !visible);
-        }
-
-        /* ---- Screen position (Lua position sliders, % of viewport) ---- */
-        function setPosition(x, y) {
-            if (!dom.container) return;
-            var px = Math.max(0, Math.min(95, Number(x) || 0));
-            var py = Math.max(0, Math.min(95, Number(y) || 0));
-            dom.container.style.left = px + "vw";
-            dom.container.style.top = py + "vh";
-            dom.container.style.right = "auto";
-            dom.container.style.bottom = "auto";
-        }
-
-        /* Monitor presets (1080p baseline). Lua sends scale for Auto from real resolution. */
-        var MONITOR_PRESETS = [
-            { id: 1, label: "1920×1080", scale: 1.0 },
-            { id: 2, label: "2560×1440", scale: 2560 / 1920 },
-            { id: 3, label: "3840×2160", scale: 3840 / 1920 },
-            { id: 4, label: "7680×4320", scale: 7680 / 1920 },
-            { id: 5, label: "Auto", scale: 1.0 }
-        ];
-        var menuSizeScale = 1.0;
-        var monitorResScale = 1.0;
-
-        function applyCombinedScale() {
-            if (!dom.container) return;
-            /* In-game DUI: Lua DrawSprite handles size — CSS scale shrinks the texture twice */
-            if (document.body.classList.contains("dui-mode")) {
-                dom.container.style.zoom = "";
-                dom.container.style.transform = "none";
-                return;
-            }
-            var s = menuSizeScale * monitorResScale;
-            s = Math.max(0.65, Math.min(4.8, s));
-            dom.container.style.zoom = "";
-            dom.container.style.transform = "scale(" + s + ")";
-            dom.container.style.transformOrigin = "top left";
-        }
-
-        function setMonitorResolution(scale, presetIndex) {
-            var s = Number(scale);
-            if (!s || s <= 0) {
-                var preset = MONITOR_PRESETS[(parseInt(presetIndex, 10) || 5) - 1];
-                s = preset ? preset.scale : 1;
-            }
-            monitorResScale = Math.max(0.85, Math.min(4.8, s));
-            applyCombinedScale();
-        }
-
-        /* Menu Size (Small / Medium / Large) — multiplied with monitor scale */
-        function setScale(scale) {
-            var s = Number(scale);
-            if (!s || s <= 0) s = 1;
-            menuSizeScale = Math.max(0.6, Math.min(1.6, s));
-            applyCombinedScale();
-        }
-
-        /* ---- Toast notifications ---- */
-        function notify(opts) {
-            if (!dom.toastStack) return;
-            opts = opts || {};
-            var kind = opts.kind || "info";
-            var icons = { info: "ℹ", success: "✓", error: "✕", warning: "!" };
-            var el = document.createElement("div");
-            el.className = "toast type-" + kind;
-            el.innerHTML =
-                '<span class="toast-icon">' + (icons[kind] || icons.info) + '</span>' +
-                '<div class="toast-body">' +
-                '<span class="toast-title">' + esc(opts.title || "Solaris") + '</span>' +
-                (opts.text ? '<span class="toast-text">' + esc(opts.text) + '</span>' : "") +
-                '</div>';
-            dom.toastStack.appendChild(el);
-            requestAnimationFrame(function () { el.classList.add("show"); });
-            var dur = opts.duration || 3200;
-            setTimeout(function () {
-                el.classList.remove("show");
-                setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 450);
-            }, dur);
-        }
-
-        function isTransitioning() { return transitioning; }
-        function items() { return currentItems; }
-        function getActive() { return activeIndex; }
-
-        return {
-            render: render, setActive: setActive, updateItem: updateItem,
-            setBindBadge: setBindBadge, refreshBindBadge: refreshBindBadge,
-            pressFeedback: pressFeedback, flashArrow: flashArrow,
-            renderTabs: renderTabs, setHeader: setHeader, setVisible: setVisible,
-            setPosition: setPosition, setScale: setScale, setMonitorResolution: setMonitorResolution,
-            setScrollMode: setScrollMode, setMenuSpeed: setMenuSpeed, monitorPresets: MONITOR_PRESETS,
-            notify: notify, updateScrollbar: updateScrollbar,
-            isTransitioning: isTransitioning, items: items, getActive: getActive
-        };
-    })();
-
-    /* ============================================================================
-     *  BRIDGE — receives commands from the Lua core (DUI messages)
-     * ==========================================================================*/
-    var driven = false;
-
-    function handleMessage(msg) {
-        if (!msg || typeof msg.type !== "string" || msg.type.indexOf("solaris:") !== 0) return;
-        driven = true;
-        document.body.classList.remove("standalone");
-
-        switch (msg.type) {
-            case "solaris:ping":
-                if (dom.biSub) dom.biSub.textContent = "Lua connected";
-                if (dom.pageCount) dom.pageCount.textContent = "↑↓ · Enter · ←";
-                break;
-            case "solaris:init":
-                document.documentElement.classList.add("dui-mode");
-                document.body.classList.add("dui-mode");
-                if (msg.theme) Theme.set(msg.theme[0], msg.theme[1], msg.theme[2]);
-                View.setHeader({
-                    name: msg.brand || "Solaris",
-                    sub: msg.version ? ("v" + msg.version + " — connected") : "connected",
-                    brand: msg.brand || "SOLARIS"
-                });
-                break;
-            case "solaris:setVisible":
-                View.setVisible(!!msg.visible);
-                break;
-            case "solaris:setHeader":
-                View.setHeader(msg);
-                break;
-            case "solaris:setTabs":
-                View.renderTabs(msg.tabs || [], msg.activeTab, function (id) {
-                    postToLua({ action: "tabClick", tab: id });
-                });
-                break;
-            case "solaris:setPage":
-                View.setVisible(true);
-                View.render(
-                    msg.items || [],
-                    msg.activeIndex != null ? msg.activeIndex : 0,
-                    document.body.classList.contains("dui-mode") ? null : (msg.animateDir || null)
-                );
-                break;
-            case "solaris:setActive":
-                View.setVisible(true);
-                View.setActive(msg.index != null ? msg.index : 0, true, true);
-                break;
-            case "solaris:setMenuSpeed":
-                View.setMenuSpeed(msg.mode != null ? msg.mode : 3);
-                break;
-            case "solaris:updateItem":
-                View.updateItem(msg.index, msg.patch || {});
-                break;
-            case "solaris:setBindBadge":
-                View.setBindBadge(
-                    msg.index != null ? msg.index : 0,
-                    msg.bind || msg.keyStr || null,
-                    !!msg.listening
-                );
-                break;
-            case "solaris:setTheme":
-                if (msg.rainbow === true) Theme.startRainbow();
-                else if (msg.rainbow === false) { Theme.stopRainbow(); if (msg.r != null) Theme.set(msg.r, msg.g, msg.b); }
-                else Theme.set(msg.r, msg.g, msg.b);
-                break;
-            case "solaris:setPosition":
-                View.setPosition(msg.x, msg.y);
-                break;
-            case "solaris:setScale":
-                View.setScale(msg.scale);
-                break;
-            case "solaris:setMonitorResolution":
-                View.setMonitorResolution(msg.scale, msg.preset);
-                break;
-            case "solaris:setScrollMode":
-                View.setScrollMode(msg.mode != null ? msg.mode : 2);
-                break;
-            case "solaris:notify":
-                View.notify(msg);
-                break;
-            case "solaris:pressFeedback":
-                View.pressFeedback(msg.index);
-                break;
-            case "solaris:flashArrow":
-                View.flashArrow(msg.index, msg.dir);
-                break;
-            case "solaris:setKeybindState": {
-                var nodes = dom.list ? dom.list.children : [];
-                var idx = msg.index;
-                if (nodes[idx]) {
-                    var kbVal = nodes[idx].querySelector(".keybind-value, .array-value");
-                    if (kbVal) kbVal.textContent = msg.listening ? "[ Press a key... ]" : (kbVal.dataset.key || kbVal.textContent);
-                    nodes[idx].classList.toggle("keybind-listening", !!msg.listening);
-                }
-                break;
-            }
-        }
+    // Set default sub-tab
+    const catData = menuData[catId];
+    if (catData.subTabs && catData.subTabs.length > 0) {
+        currentSubTab = catData.subTabs[0].id;
+    } else {
+        currentSubTab = 'default';
     }
 
-    /* Optional JS -> Lua channel. Only works if the executor exposes a NUI
-       callback endpoint; harmless no-op otherwise. Lua never depends on it. */
-    function postToLua(payload) {
-        try {
-            if (window.invokeNative && window.GetParentResourceName) {
-                fetch("https://" + window.GetParentResourceName() + "/solaris", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json; charset=UTF-8" },
-                    body: JSON.stringify(payload)
-                }).catch(function () {});
-            }
-        } catch (e) { /* ignore */ }
-    }
-
-    function parseDuiPayload(data) {
-        if (data == null) return null;
-        if (typeof data === "string") {
-            try { return JSON.parse(data); } catch (e) { return null; }
-        }
-        return data;
-    }
-
-    function unwrapMessage(raw) {
-        var msg = parseDuiPayload(raw);
-        if (msg) return msg;
-        if (raw && typeof raw === "object") {
-            msg = parseDuiPayload(raw.data);
-            if (msg) return msg;
-            msg = parseDuiPayload(raw.message);
-            if (msg) return msg;
-            msg = parseDuiPayload(raw.payload);
-            if (msg) return msg;
-        }
-        return null;
-    }
-
-    window.addEventListener("message", function (event) {
-        var msg = unwrapMessage(event.data);
-        if (msg && msg.type === "solaris:setPage" && msg.items && msg.items.length) {
-            driven = true;
-            document.body.classList.remove("standalone");
-        }
-        handleMessage(msg);
+    // Update sidebar active classes
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.toggle('active', item.getAttribute('data-category') === catId);
     });
 
-    /* Direct bridge — Lua ExecuteJS / some executors call this instead of postMessage */
-    window.handleDuiMessage = function (raw) {
-        handleMessage(unwrapMessage(raw));
-    };
+    // Animate sidebar indicator smoothly
+    const activeNav = document.querySelector(`.nav-item[data-category="${catId}"]`);
+    if (activeNav) updateSidebarIndicator(activeNav);
 
+    isTransitioning = true;
+    tileGrid.classList.add('grid-exit');
 
-    /* ============================================================================
-     *  STANDALONE — browser preview with local keyboard navigation
-     * ==========================================================================*/
-    var Standalone = (function () {
-        /* A compact sample tree purely for previewing the design in a browser. */
-        var pages = {
-            main: [
-                { label: "Self Options", type: "submenu", target: "self", icon: "fa-solid fa-user" },
-                { label: "Combat Options", type: "submenu", target: "combat", icon: "fa-solid fa-burst" },
-                { label: "Weapon Options", type: "submenu", target: "weaponry", icon: "fa-solid fa-gun" },
-                { label: "Vehicle Options", type: "submenu", target: "vehicle", icon: "fa-solid fa-car" },
-                { label: "Online Options", type: "submenu", target: "players", icon: "fa-solid fa-person" },
-                { label: "Misc Options", type: "submenu", target: "settings", icon: "fa-solid fa-gear" }
-            ],
-            self: [
-                { label: "Status", type: "separator" },
-                { label: "God Mode", type: "toggle", value: false, icon: "fa-solid fa-shield-halved", desc: "Block all incoming damage" },
-                { label: "Infinite Stamina", type: "toggle", value: true, icon: "fa-solid fa-person-running" },
-                { label: "Movement", type: "separator" },
-                { label: "Run Speed", type: "slider", value: 50, min: 0, max: 100, unit: "%", icon: "fa-solid fa-gauge-high" },
-                { label: "Heal", type: "action", icon: "fa-solid fa-kit-medical" }
-            ],
-            visual: [
-                { label: "FOV", type: "slider", value: 50, min: 10, max: 130, icon: "fa-solid fa-video" },
-                { label: "Time", type: "array", value: 1, options: ["Dawn", "Day", "Dusk", "Night"], icon: "fa-solid fa-clock" },
-                { label: "Theme Color", type: "color", value: "#03fcf0", isTheme: true, icon: "fa-solid fa-palette" },
-                { label: "Rainbow Theme", type: "toggle", value: false, isRainbow: true, icon: "fa-solid fa-rainbow" }
-            ],
-            vehicle: [
-                { label: "Username", type: "info", valueStr: "preview", icon: "fa-solid fa-id-badge" },
-                { label: "Repair Vehicle", type: "action", icon: "fa-solid fa-wrench" },
-                { label: "Engine Power", type: "slider", value: 100, min: 0, max: 1000, unit: "%", icon: "fa-solid fa-bolt" }
-            ],
-            settings: [
-                { label: "Display", type: "separator" },
-                { label: "Monitor", type: "array", value: 4, options: ["1920×1080", "2560×1440", "3840×2160", "7680×4320", "Auto"] },
-                { label: "Menu Size", type: "array", value: 1, options: ["Small", "Medium", "Large"] },
-                { label: "Open Menu", type: "info", valueStr: "Alt" },
-                { label: "Discord", type: "action", icon: "fa-brands fa-discord" }
-            ]
-        };
-        var navHistory = ["main"];
-        var indexHistory = [0];
-        var cooldown = false;
+    setTimeout(() => {
+        tileGrid.classList.remove('grid-exit');
+        renderSubTabs();
+        renderContent();
+        tileGrid.classList.add('grid-enter');
+        setTimeout(() => {
+            tileGrid.classList.remove('grid-enter');
+            isTransitioning = false;
+        }, 300);
+    }, 120);
+}
 
-        function curPage() { return navHistory[navHistory.length - 1]; }
-        function curItems() { return pages[curPage()]; }
-        function curIdx() { return indexHistory[indexHistory.length - 1]; }
-
-        function firstSelectable(items, start) {
-            var idx = start >= items.length ? 0 : start, loops = 0;
-            while (items[idx] && items[idx].type === "separator") {
-                idx++; if (idx >= items.length) idx = 0;
-                if (++loops > items.length) break;
-            }
-            return idx;
-        }
-
-        function show(dir) {
-            var items = curItems();
-            var idx = firstSelectable(items, curIdx());
-            indexHistory[indexHistory.length - 1] = idx;
-            View.render(items, idx, dir || null);
-        }
-
-        function navigate(step) {
-            if (cooldown || View.isTransitioning()) return;
-            cooldown = true;
-            var items = curItems();
-            var idx = curIdx(), loops = 0;
-            do {
-                idx += step;
-                if (idx < 0) idx = items.length - 1;
-                else if (idx >= items.length) idx = 0;
-                if (++loops > items.length) break;
-            } while (items[idx] && items[idx].type === "separator");
-            indexHistory[indexHistory.length - 1] = idx;
-            View.setActive(idx);
-            setTimeout(function () { cooldown = false; }, 110);
-        }
-
-        function enter() {
-            if (View.isTransitioning()) return;
-            var item = curItems()[curIdx()];
-            if (!item) return;
-            var idx = curIdx();
-            if (item.type === "submenu" && pages[item.target]) {
-                View.pressFeedback(idx);
-                navHistory.push(item.target);
-                indexHistory.push(0);
-                show("forward");
-            } else if (item.type === "toggle") {
-                item.value = !item.value;
-                View.updateItem(idx, { value: item.value });
-                View.pressFeedback(idx);
-                if (item.isRainbow) { if (item.value) Theme.startRainbow(); else { Theme.stopRainbow(); Theme.set(181, 0, 0); } }
-            } else if (item.type === "action") {
-                View.pressFeedback(idx);
-                View.notify({ title: item.label, text: "Action triggered (preview)", kind: "success" });
-            } else if (item.type === "color" && item.isTheme) {
-                openColor(item, idx);
-            }
-        }
-
-        function openColor(item, idx) {
-            var input = document.createElement("input");
-            input.type = "color"; input.value = item.value;
-            input.style.cssText = "position:absolute;opacity:0;pointer-events:none";
-            document.body.appendChild(input);
-            input.click();
-            input.addEventListener("input", function (e) {
-                item.value = e.target.value;
-                View.updateItem(idx, { value: e.target.value });
-                var rgb = Theme.hexToRgb(e.target.value);
-                Theme.set(rgb[0], rgb[1], rgb[2]);
-            });
-            input.addEventListener("change", function () { document.body.removeChild(input); });
-        }
-
-        function back() {
-            if (navHistory.length > 1 && !View.isTransitioning()) {
-                navHistory.pop(); indexHistory.pop();
-                show("backward");
-            }
-        }
-
-        function leftRight(dir) {
-            if (View.isTransitioning()) return;
-            var item = curItems()[curIdx()];
-            if (!item) return;
-            var idx = curIdx();
-            if (item.type === "slider") {
-                var step = (item.max - item.min) <= 20 ? 1 : Math.max(1, Math.round((item.max - item.min) / 50));
-                item.value = dir === "left"
-                    ? Math.max(item.min, item.value - step)
-                    : Math.min(item.max, item.value + step);
-                View.updateItem(idx, { value: item.value });
-            } else if (item.type === "array") {
-                item.value = dir === "left"
-                    ? (item.value > 0 ? item.value - 1 : item.options.length - 1)
-                    : (item.value < item.options.length - 1 ? item.value + 1 : 0);
-                View.updateItem(idx, { value: item.value });
-                View.flashArrow(idx, dir);
-                if (curPage() === "settings" && item.label === "Monitor") {
-                    View.setMonitorResolution(null, item.value + 1);
-                } else if (curPage() === "settings" && item.label === "Menu Size") {
-                    View.setScale(([0.85, 1.0, 1.18])[item.value] || 1.0);
-                }
-            } else if (dir === "left") back();
-            else if (dir === "right" && item.type === "submenu") enter();
-        }
-
-        function start() {
-            document.body.classList.add("standalone");
-            View.renderTabs(
-                [{ id: "main", label: "Main" }, { id: "bypasses", label: "Bypasses" }, { id: "settings", label: "Settings" }],
-                "main",
-                function () { /* preview tabs are inert */ }
-            );
-            View.setHeader({ name: "Solaris", sub: "browser preview", avatar: "https://cdn.discordapp.com/embed/avatars/0.png" });
-            show();
-
-            document.addEventListener("keydown", function (e) {
-                if (driven) return; /* Lua took over */
-                if (e.key === "ArrowUp") { e.preventDefault(); navigate(-1); }
-                else if (e.key === "ArrowDown") { e.preventDefault(); navigate(1); }
-                else if (e.key === "ArrowLeft") { e.preventDefault(); leftRight("left"); }
-                else if (e.key === "ArrowRight") { e.preventDefault(); leftRight("right"); }
-                else if (e.key === "Enter") { e.preventDefault(); if (!e.repeat) enter(); }
-                else if (e.key === "Backspace") { e.preventDefault(); back(); }
-            });
-        }
-
-        function getPages() { return pages; }
-        return { start: start, getPages: getPages };
-    })();
-
-    /* ───────────────────────── Boot ───────────────────────── */
-    function isPreviewMode() {
-        if (/[?&]preview=1\b/.test(window.location.search)) return true;
-        if (/[?&]standalone=1\b/.test(window.location.search)) return true;
-        if (window.location.protocol === "file:") return true;
-        return false;
-    }
-
-    function makeDraggable(el) {
-        if (!el) return;
-        var isDragging = false;
-        var startX, startY, initialX, initialY;
-
-        el.style.pointerEvents = "auto";
-        el.style.userSelect = "none";
-
-        el.addEventListener("mousedown", function(e) {
-            if (e.target.tagName === "INPUT" || e.target.tagName === "BUTTON") return;
-            isDragging = true;
-            startX = e.clientX;
-            startY = e.clientY;
-            var rect = el.getBoundingClientRect();
-            initialX = rect.left;
-            initialY = rect.top;
-            
-            el.style.position = "fixed";
-            el.style.zIndex = "10000";
-            el.style.right = 'auto';
-            el.style.bottom = 'auto';
-            el.style.left = initialX + "px";
-            el.style.top = initialY + "px";
-            el.style.margin = "0";
-            
+function setupEvents() {
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.onclick = (e) => {
             e.preventDefault();
-        });
+            switchCategory(item.getAttribute('data-category'));
+        };
+    });
 
-        document.addEventListener("mousemove", function(e) {
-            if (!isDragging) return;
-            var dx = e.clientX - startX;
-            var dy = e.clientY - startY;
-            el.style.left = (initialX + dx) + "px";
-            el.style.top = (initialY + dy) + "px";
-        });
+    searchInput.oninput = (e) => {
+        searchQuery = e.target.value.toLowerCase();
+        renderContent();
+    };
+}
 
-        document.addEventListener("mouseup", function() {
-            isDragging = false;
-        });
+/* ---- Seamless NUI callback gateway for FiveM Shark Executor ---- */
+let _solClipSeq = 0;
+/* Clipboard relay: reliable inbound channel for SharkAPI DUIs (Lua polls
+   GetClipboardText). Each interaction is copied as SOLARIS_NUI::seq::json. */
+function solClipboardRelay(payload) {
+    try {
+        _solClipSeq++;
+        const s = 'SOLARIS_NUI::' + _solClipSeq + '::' + JSON.stringify(payload);
+        const ta = document.createElement('textarea');
+        ta.value = s;
+        ta.style.position = 'fixed';
+        ta.style.top = '-1000px';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        try { document.execCommand('copy'); } catch (e) {}
+        document.body.removeChild(ta);
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(s).catch(() => {});
+        }
+    } catch (e) {}
+}
+
+function sendToLua(action, data) {
+    console.log(`[sendToLua] Action: ${action} | Data:`, data);
+
+    let resourceName = "";
+    try {
+        resourceName = GetParentResourceName();
+    } catch(e) {}
+
+    // 1. Send via local resource NUI callback endpoint
+    if (resourceName && resourceName !== "") {
+        fetch(`https://${resourceName}/${action}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+            body: JSON.stringify(data)
+        }).catch(err => console.warn('Fetch resource NUI callback failed:', err));
     }
 
-    document.addEventListener("DOMContentLoaded", function () {
-        cacheDom();
-        dom.list.addEventListener("scroll", function () { View.updateScrollbar(); });
+    // 2. Send via generic FiveM NUI-callback endpoint (highly compatible for DUIs)
+    fetch(`https://nui-callback/${action}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+        body: JSON.stringify(data)
+    }).catch(err => console.warn('Fetch nui-callback endpoint failed:', err));
 
-        if (isPreviewMode()) {
-            var pills = document.querySelectorAll(".watermark-pill");
-            for (var pi = 0; pi < pills.length; pi++) makeDraggable(pills[pi]);
-        }
+    // 3. Clipboard relay fallback (works on executors without NUI callbacks)
+    if (action === 'interaction') {
+        solClipboardRelay(data);
+    }
+}
 
-        /* Cloudflare DUI = in-game unless ?preview=1 or local file. No loader / keybind gate. */
-        if (!isPreviewMode()) {
-            document.documentElement.classList.add("dui-mode");
-            document.body.classList.add("dui-mode");
-            /* Default menu so in-game is never an empty box before Lua sync */
-            /* Default inject layout — Vanity-style order + glass (until Lua sync) */
-            var defaultMain = [
-                { label: "Self Options", type: "submenu", target: "player", icon: "fa-solid fa-user" },
-                { label: "Combat Options", type: "submenu", target: "combat", icon: "fa-solid fa-burst" },
-                { label: "Weapon Options", type: "submenu", target: "weaponry", icon: "fa-solid fa-gun" },
-                { label: "Vehicle Options", type: "submenu", target: "vehicles", icon: "fa-solid fa-car" },
-                { label: "Online Options", type: "submenu", target: "players", icon: "fa-solid fa-users" },
-                { label: "World Options", type: "submenu", target: "server", icon: "fa-solid fa-earth-americas" },
-                { label: "Misc Options", type: "submenu", target: "assists", icon: "fa-solid fa-toolbox" }
-            ];
-            View.setHeader({ name: "Solaris", sub: "waiting for Lua…", brand: "SOLARIS" });
-            View.renderTabs(
-                [
-                    { id: "main", label: "MAIN" },
-                    { id: "protections", label: "PROTECTIONS" },
-                    { id: "settings", label: "SETTINGS" }
-                ],
-                "main",
-                function () { /* keyboard tabs in Lua */ }
-            );
-            View.render(defaultMain, 1, null);
-            View.setPosition(10, 10);
-            View.setVisible(false);
-            if (dom.pageCount) dom.pageCount.textContent = "↑↓ · Enter · ←";
+function onInteraction(id, val) {
+    console.log(`[Interaction] ${id} ->`, val);
+    
+    // Package item id, current value, and selected player details to Lua
+    sendToLua('interaction', {
+        id: id,
+        value: val,
+        selectedPlayerId: selectedPlayerId,
+        selectedPlayerName: selectedPlayerName
+    });
+}
+
+function showNotify(msg) {
+    if (!notification) return;
+    notification.textContent = msg;
+    notification.classList.add('show');
+    clearTimeout(window.notifTimeout);
+    window.notifTimeout = setTimeout(() => {
+        notification.classList.remove('show');
+    }, 2000);
+}
+
+/* ---- Keybind Listening & Accent Picker Helpers ---- */
+let isListeningForKey = false;
+function startListeningForKey(item, itemEl) {
+    if (isListeningForKey) return;
+    isListeningForKey = true;
+
+    const labelEl = itemEl.querySelector('.function-label');
+
+    labelEl.textContent = "Change Bind [Press Key...]";
+    labelEl.style.color = "var(--accent)";
+
+    function onKeyDown(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (e.key === 'Escape') {
+            window.removeEventListener('keydown', onKeyDown, true);
+            isListeningForKey = false;
+            renderContent();
+            showNotify('Keybind change cancelled');
             return;
         }
 
-        document.body.classList.add("standalone");
-        if (!driven) Standalone.start();
+        let keyName = e.key;
+        if (keyName === ' ') keyName = 'SPACE';
+        else if (keyName.length === 1) keyName = keyName.toUpperCase();
+        else keyName = keyName.charAt(0).toUpperCase() + keyName.slice(1);
+
+        item.label = `Change Bind [${keyName}]`;
+        
+        window.removeEventListener('keydown', onKeyDown, true);
+        isListeningForKey = false;
+
+        renderContent();
+        onInteraction(item.id, keyName);
+        showNotify(`Keybind updated to: ${keyName}`);
+    }
+
+    window.addEventListener('keydown', onKeyDown, true);
+}
+
+let rgbInterval = null;
+let rgbHue = 0;
+
+function hslToRgb(h, s, l) {
+    s /= 100;
+    l /= 100;
+    const k = n => (n + h / 30) % 12;
+    const a = s * Math.min(l, 1 - l);
+    const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
+    return [Math.round(255 * f(0)), Math.round(255 * f(8)), Math.round(255 * f(4))];
+}
+
+function hsvToRgb(h, s, v) {
+    s /= 100;
+    v /= 100;
+    const c = v * s;
+    const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+    const m = v - c;
+    let r, g, b;
+    if (h < 60) { r = c; g = x; b = 0; }
+    else if (h < 120) { r = x; g = c; b = 0; }
+    else if (h < 180) { r = 0; g = c; b = x; }
+    else if (h < 240) { r = 0; g = x; b = c; }
+    else if (h < 300) { r = x; g = 0; b = c; }
+    else { r = c; g = 0; b = x; }
+    return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)];
+}
+
+function rgbToHex(r, g, b) {
+    return "#" + [r, g, b].map(x => {
+        const hex = x.toString(16);
+        return hex.length === 1 ? "0" + hex : hex;
+    }).join("");
+}
+
+function startRGBRainbow() {
+    if (rgbInterval) return;
+    
+    function cycle() {
+        const rgbRainbowItem = menuData.configs.general[0].items.find(i => i.id === 'rgb_rainbow');
+        if (!rgbRainbowItem || !rgbRainbowItem.value) {
+            rgbInterval = null;
+            applyPresetAccent();
+            return;
+        }
+        rgbHue = (rgbHue + 0.7) % 360;
+        const [r, g, b] = hslToRgb(rgbHue, 95, 50);
+        const hex = rgbToHex(r, g, b);
+        
+        const [br, bg, bb] = hslToRgb(rgbHue, 95, 60);
+        const brightHex = rgbToHex(br, bg, bb);
+        
+        setAccentColor(hex, `${r}, ${g}, ${b}`, brightHex);
+        rgbInterval = requestAnimationFrame(cycle);
+    }
+    
+    rgbInterval = requestAnimationFrame(cycle);
+}
+
+function stopRGBRainbow() {
+    applyPresetAccent();
+}
+
+function applyPresetAccent() {
+    const accentItem = menuData.configs.general[0].items.find(i => i.id === 'menu_accent');
+    // Restore custom HSV color if set
+    if (accentItem && accentItem.hsv) {
+        const [r, g, b] = hsvToRgb(accentItem.hsv.h, accentItem.hsv.s, accentItem.hsv.v);
+        const hex = rgbToHex(r, g, b);
+        setAccentColor(hex, `${r}, ${g}, ${b}`, hex);
+        return;
+    }
+    const selectedColor = accentItem ? accentItem.value : 'solaris';
+    
+    const colors = {
+        solaris: { hex: '#ff9500', rgb: '255, 149, 0', bright: '#ffb700' },
+        green: { hex: '#22c55e', rgb: '34, 197, 94', bright: '#4ade80' },
+        blue: { hex: '#3b82f6', rgb: '59, 130, 246', bright: '#60a5fa' },
+        purple: { hex: '#a855f7', rgb: '168, 85, 247', bright: '#c084fc' },
+        red: { hex: '#ef4444', rgb: '239, 68, 68', bright: '#f87171' },
+        pink: { hex: '#ec4899', rgb: '236, 72, 153', bright: '#f472b6' },
+        amber: { hex: '#eab308', rgb: '234, 179, 8', bright: '#facc15' },
+        cyan: { hex: '#06b6d4', rgb: '6, 182, 212', bright: '#22d3ee' }
+    };
+    
+    const c = colors[selectedColor] || colors.solaris;
+    setAccentColor(c.hex, c.rgb, c.bright);
+}
+
+function setAccentColor(hex, rgb, brightHex) {
+    document.documentElement.style.setProperty('--accent', hex);
+    document.documentElement.style.setProperty('--accent-rgb', rgb);
+    if (brightHex) {
+        document.documentElement.style.setProperty('--accent-bright', brightHex);
+    }
+}
+
+/* ---- Sidebar Indicator Smooth Slide ---- */
+function updateSidebarIndicator(navEl) {
+    const indicator = document.getElementById('sidebar-indicator');
+    const navContainer = document.querySelector('.sidebar-nav');
+    if (!indicator || !navEl || !navContainer) return;
+
+    const navRect = navContainer.getBoundingClientRect();
+    const itemRect = navEl.getBoundingClientRect();
+
+    indicator.style.top = (itemRect.top - navRect.top + navContainer.scrollTop) + 'px';
+    indicator.style.height = itemRect.height + 'px';
+}
+
+/* ---- Snow Effect Engine ---- */
+let snowAnimId = null;
+let snowflakes = [];
+const SNOW_COUNT = 120;
+
+function startSnowEffect() {
+    const canvas = document.getElementById('snow-canvas');
+    if (!canvas) return;
+    canvas.style.display = 'block';
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    snowflakes = [];
+    for (let i = 0; i < SNOW_COUNT; i++) {
+        snowflakes.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            r: Math.random() * 2.5 + 0.5,
+            speed: Math.random() * 1.5 + 0.4,
+            wind: Math.random() * 0.5 - 0.25,
+            opacity: Math.random() * 0.5 + 0.3,
+            sway: Math.random() * Math.PI * 2
+        });
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        snowflakes.forEach(flake => {
+            ctx.beginPath();
+            ctx.arc(flake.x, flake.y, flake.r, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255, 255, 255, ${flake.opacity})`;
+            ctx.fill();
+
+            flake.y += flake.speed;
+            flake.sway += 0.01;
+            flake.x += Math.sin(flake.sway) * 0.4 + flake.wind;
+
+            if (flake.y > canvas.height + flake.r) {
+                flake.y = -flake.r;
+                flake.x = Math.random() * canvas.width;
+            }
+            if (flake.x > canvas.width) flake.x = 0;
+            if (flake.x < 0) flake.x = canvas.width;
+        });
+        snowAnimId = requestAnimationFrame(animate);
+    }
+
+    animate();
+}
+
+function stopSnowEffect() {
+    if (snowAnimId) {
+        cancelAnimationFrame(snowAnimId);
+        snowAnimId = null;
+    }
+    const canvas = document.getElementById('snow-canvas');
+    if (canvas) {
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        canvas.style.display = 'none';
+    }
+    snowflakes = [];
+}
+
+/* ---- Window postMessage Listener for FiveM Client (Lua DUI) ---- */
+function applyStateSync(stateObj) {
+    if (!stateObj) return;
+    Object.keys(menuData).forEach(catKey => {
+        const cat = menuData[catKey];
+        Object.keys(cat).forEach(k => {
+            if (k === 'subTabs') return;
+            const groups = cat[k];
+            if (!Array.isArray(groups)) return;
+            groups.forEach(group => {
+                (group.items || []).forEach(item => {
+                    if (item.id in stateObj && item.type === 'toggle') {
+                        item.value = stateObj[item.id] === true;
+                    }
+                });
+            });
+        });
     });
+    renderContent();
+}
 
-    /* Expose the view so the Lua bridge (or console) can poke it if needed. */
-    window.Solaris = { handleMessage: handleMessage, handleDuiMessage: window.handleDuiMessage, View: View, Theme: Theme };
-})();
+function setMenuVisible(visible) {
+    const wrap = document.querySelector('.menu-wrapper');
+    if (wrap) wrap.style.display = visible ? 'flex' : 'none';
+}
 
+window.handleDuiMessage = function (data) {
+    try { window.postMessage(data, '*'); } catch (e) {}
+};
+
+window.addEventListener("message", (event) => {
+    let data = event.data;
+    if (typeof data === "string") {
+        try { data = JSON.parse(data); } catch (e) { return; }
+    }
+    if (!data || !data.type) return;
+
+    if (data.type === "solaris:visible") {
+        setMenuVisible(data.visible === true);
+        return;
+    }
+    if (data.type === "solaris:setState") {
+        applyStateSync(data.state);
+        return;
+    }
+    if (data.type === "solaris:notify" || data.type === "notify") {
+        showNotify(data.text || data.title || "");
+        return;
+    }
+
+    // 1. Dynamic User Infos updates
+    if (data.type === "updateUserInfos") {
+        const generalItems = menuData.configs.general.find(g => g.group === "User Infos").items;
+        if (data.username) {
+            const item = generalItems.find(i => i.id === "user_name");
+            if (item) item.label = `User: ${data.username}`;
+        }
+        if (data.subscription) {
+            const item = generalItems.find(i => i.id === "user_sub");
+            if (item) item.label = `Subscription: ${data.subscription}`;
+        }
+        if (data.serverName) {
+            const item = generalItems.find(i => i.id === "server_name_info");
+            if (item) item.label = `Server: ${data.serverName}`;
+        }
+        if (data.playersCount) {
+            const item = generalItems.find(i => i.id === "players_online");
+            if (item) item.label = `Players Online: ${data.playersCount}`;
+        }
+        if (data.serverFramework) {
+            const item = generalItems.find(i => i.id === "server_fw");
+            if (item) item.label = `Server Framework: ${data.serverFramework}`;
+        }
+        if (data.serverAnticheat) {
+            const item = generalItems.find(i => i.id === "server_ac");
+            if (item) item.label = `Server Anticheat: ${data.serverAnticheat}`;
+        }
+        if (data.resourceAnticheat) {
+            const item = generalItems.find(i => i.id === "resource_ac");
+            if (item) item.label = `Resource Anticheat: ${data.resourceAnticheat}`;
+        }
+        
+        if (currentCategory === 'configs' && currentSubTab === 'general') {
+            renderContent();
+        }
+    }
+
+    // 2. Dynamic Player list updates
+    if (data.type === "updatePlayerList") {
+        const playerItem = menuData.online.default.find(g => g.group === "Player List").items.find(i => i.id === "players_container");
+        if (playerItem) {
+            playerItem.players = data.players || [];
+        }
+        if (currentCategory === 'online') {
+            filterPlayerListDOM();
+        }
+    }
+});
+
+init();
+setMenuVisible(false);
 </script>
 </body>
 </html>
