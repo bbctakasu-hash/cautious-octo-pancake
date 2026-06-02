@@ -1,1252 +1,646 @@
-/* ============================================================================
- *  SOLARIS — Menu View Layer
- * ----------------------------------------------------------------------------
- *  This file is a *pure view*. In-game it is loaded as a DUI by the Lua core
- *  (solaris.lua), which owns all state, input and feature logic. Lua pushes
- *  view commands here through `window.postMessage` (see the Bridge section).
- *
- *  When the page is opened directly in a browser (no Lua talking to it), it
- *  falls back to STANDALONE mode: a small sample menu with local keyboard
- *  navigation so the design can be previewed.
- *
- *  Message protocol (event.data.type):
- *    solaris:init              { brand, version, discord, theme:[r,g,b] }
- *    solaris:setVisible        { visible }
- *    solaris:setHeader         { name, sub, avatar }
- *    solaris:setTabs           { tabs:[{id,label}], activeTab }
- *    solaris:setPage           { items:[...], activeIndex, animateDir, path }
- *    solaris:setActive         { index }
- *    solaris:updateItem        { index, patch:{...} }
- *    solaris:setTheme          { r, g, b } | { rainbow:true } | { rainbow:false }
- *    solaris:notify            { title, text, kind, duration }
- *    solaris:pressFeedback     { index }
- *    solaris:setKeybindState   { index, listening }
- * ==========================================================================*/
+/* 
+    Solaris Menu - Dynamic Logic Layer
+    Handles rendering, search, navigation and UI interactions.
+*/
 
-(function () {
-    "use strict";
-
-    /* ───────────────────────── Theme engine ───────────────────────── */
-    var Theme = (function () {
-        var currentRgb = [3, 252, 240];
-        var rainbowRaf = null;
-
-        function hexToRgb(hex) {
-            hex = String(hex).replace("#", "");
-            return [
-                parseInt(hex.substring(0, 2), 16),
-                parseInt(hex.substring(2, 4), 16),
-                parseInt(hex.substring(4, 6), 16)
-            ];
+const menuData = {
+    player: [
+        {
+            group: "General Options",
+            icon: "fa-sliders",
+            items: [
+                { id: "revive_death", label: "Revive on Death", type: "toggle", value: false },
+                { id: "revive_now", label: "Revive", type: "action" },
+                { id: "suicide", label: "Suicide", type: "action" },
+                { id: "clean_ped", label: "Clean Injuries", type: "action" },
+                { id: "handcuffs", label: "Cuff/Uncuff", type: "action" },
+                { id: "vest", label: "Set Vest", type: "action" },
+                { id: "tp_waypoint", label: "Teleport to Waypoint", type: "action" }
+            ]
+        },
+        {
+            group: "Powers",
+            icon: "fa-bolt-lightning",
+            items: [
+                { id: "godmode", label: "Invincibility", type: "toggle", value: true },
+                { id: "full_invis", label: "Full Invisible", type: "toggle", value: false },
+                { id: "super_jump", label: "Super Jump", type: "toggle", value: false },
+                { id: "super_punch", label: "Super Punch", type: "toggle", value: false },
+                { id: "super_run", label: "Super Speed", type: "toggle", value: false },
+                { id: "run_speed", label: "Run Speed", type: "slider", value: 50 },
+                { id: "explosive_eyes", label: "Explosive Eyes", type: "toggle", value: false },
+                { id: "laser_eyes", label: "Laser Eyes", type: "toggle", value: false }
+            ]
+        },
+        {
+            group: "Movement",
+            icon: "fa-person-walking",
+            items: [
+                { id: "noclip", label: "Noclip", type: "toggle", value: false },
+                { id: "noclip_invis", label: "Invisible Noclip", type: "toggle", value: false },
+                { id: "noclip_speed", label: "Noclip Speed", type: "slider", value: 30 },
+                { id: "freecam", label: "Freecam", type: "toggle", value: false },
+                { id: "freecam_speed", label: "Freecam Speed", type: "slider", value: 40 },
+                { id: "inf_stamina", label: "Infinite Stamina", type: "toggle", value: true },
+                { id: "auto_tp_way", label: "Automatic TP Way", type: "toggle", value: true }
+            ]
         }
-
-        function rgbToHex(r, g, b) {
-            return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+    ],
+    vehicle: [
+        {
+            group: "Basic Vehicle",
+            icon: "fa-car-side",
+            items: [
+                { id: "v_repair", label: "Repair Vehicle", type: "action" },
+                { id: "v_clean", label: "Clean Vehicle", type: "action" },
+                { id: "v_god", label: "Vehicle God Mode", type: "toggle", value: false },
+                { id: "v_speed", label: "Speed Multiplier", type: "slider", value: 10 }
+            ]
         }
-
-        function hslToRgb(h, s, l) {
-            h /= 360; s /= 100; l /= 100;
-            var r, g, b;
-            if (s === 0) { r = g = b = l; }
-            else {
-                var hue2rgb = function (p, q, t) {
-                    if (t < 0) t += 1;
-                    if (t > 1) t -= 1;
-                    if (t < 1 / 6) return p + (q - p) * 6 * t;
-                    if (t < 1 / 2) return q;
-                    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
-                    return p;
-                };
-                var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-                var p = 2 * l - q;
-                r = hue2rgb(p, q, h + 1 / 3);
-                g = hue2rgb(p, q, h);
-                b = hue2rgb(p, q, h - 1 / 3);
-            }
-            return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+    ],
+    radar: [
+        {
+            group: "Radar Options",
+            icon: "fa-satellite-dish",
+            items: [
+                { id: "radar_toggle", label: "Enable Radar", type: "toggle", value: true },
+                { id: "radar_zoom", label: "Zoom Level", type: "slider", value: 50 }
+            ]
         }
-
-        function set(r, g, b) {
-            currentRgb = [r, g, b];
-            document.documentElement.style.setProperty("--theme", r + ", " + g + ", " + b);
+    ],
+    weapons: [
+        {
+            group: "Weapon Mods",
+            icon: "fa-gun",
+            items: [
+                { id: "master_aim", label: "Master Aimbot", type: "toggle", value: true },
+                { id: "silent_aim", label: "Silent Aim", type: "toggle", value: false },
+                { id: "no_recoil", label: "No Recoil", type: "toggle", value: true },
+                { id: "no_spread", label: "No Spread", type: "toggle", value: true },
+                { id: "inf_ammo", label: "Infinite Ammo", type: "toggle", value: true }
+            ]
         }
-
-        function startRainbow() {
-            if (rainbowRaf) return;
-            var start = null;
-            var tick = function (ts) {
-                if (!start) start = ts;
-                var hue = ((ts - start) / 1000 * 60) % 360;
-                var rgb = hslToRgb(hue, 85, 65);
-                set(rgb[0], rgb[1], rgb[2]);
-                rainbowRaf = requestAnimationFrame(tick);
-            };
-            rainbowRaf = requestAnimationFrame(tick);
+    ],
+    visuals: [
+        {
+            group: "ESP Suite",
+            icon: "fa-eye",
+            items: [
+                { id: "esp_master", label: "Master ESP", type: "toggle", value: true },
+                { id: "esp_box", label: "Box ESP", type: "toggle", value: true },
+                { id: "esp_skele", label: "Skeleton", type: "toggle", value: true },
+                { id: "esp_dist", label: "Distance", type: "toggle", value: true }
+            ]
         }
-
-        function stopRainbow() {
-            if (rainbowRaf) { cancelAnimationFrame(rainbowRaf); rainbowRaf = null; }
+    ],
+    exploits: [
+        {
+            group: "Protections",
+            icon: "fa-shield-halved",
+            items: [
+                { id: "antiaim", label: "Antiaim", type: "toggle", value: true },
+                { id: "anti_tp", label: "Block TP to Me", type: "toggle", value: true },
+                { id: "anti_cuffs", label: "Anti Cuffs", type: "toggle", value: true }
+            ]
         }
-
-        return {
-            set: set, hexToRgb: hexToRgb, rgbToHex: rgbToHex,
-            startRainbow: startRainbow, stopRainbow: stopRainbow,
-            current: function () { return currentRgb.slice(); }
-        };
-    })();
-
-    /* ───────────────────────── DOM references ───────────────────────── */
-    var dom = {};
-    function cacheDom() {
-        dom.container = document.getElementById("menu-container");
-        dom.content = document.querySelector(".content");
-        dom.contentMain = document.querySelector(".content-main");
-        dom.viewport = document.getElementById("menu-viewport");
-        dom.selector = document.getElementById("menu-selector");
-        dom.list = document.getElementById("menu-list");
-        dom.pageCount = document.getElementById("page-count");
-        dom.tabs = document.querySelector(".tabs");
-        dom.track = document.getElementById("scroll-track");
-        dom.trackInner = document.getElementById("scroll-track-inner");
-        dom.thumb = document.getElementById("scroll-thumb");
-        dom.arrowTop = document.querySelector(".scroll-arrow-top");
-        dom.arrowBottom = document.querySelector(".scroll-arrow-bottom");
-        dom.biName = document.getElementById("bi-name");
-        dom.biSub = document.getElementById("bi-sub");
-        dom.biAvatar = document.getElementById("bi-avatar");
-        dom.toastStack = document.getElementById("toast-stack");
-    }
-
-    /* ───────────────────────── HTML escaping ───────────────────────── */
-    function esc(str) {
-        return String(str == null ? "" : str)
-            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;");
-    }
-
-    /* ============================================================================
-     *  VIEW — renders pages, items, highlight, scrollbar, header, toasts
-     * ==========================================================================*/
-    var View = (function () {
-        var MENU_MAX_HEIGHT = 420;
-        var MENU_MIN_HEIGHT = 0;
-
-        /* 1 = Normal, 2 = Smooth, 3 = Very Smooth */
-        var scrollMode = 1;
-        var selectorMode = 3;
-        var SCROLL_LERP = { 1: 1, 2: 0.38, 3: 0.12 };
-        var SEL_MS = { 1: 72, 2: 24, 3: 0 };
-        var PAGE_OUT_MS = 0;
-        var PAGE_IN_MS = 0;
-
-        var currentItems = [];
-        var activeIndex = -1;
-        var transitioning = false;
-        var scrollLoop = { raf: null, target: 0 };
-        var skipScrollSync = false;
-
-        /* ---- Helper to convert FontAwesome classes to FA Solid SVG paths ---- */
-        function getIconSvg(cls) {
-            if (!cls) return "";
-            var p = "", vb = "0 0 512 512";
-            if (cls.indexOf("fa-user") > -1) { vb = "0 0 448 512"; p = "M224 256A128 128 0 1 0 224 0a128 128 0 1 0 0 256zm-45.7 48C79.8 304 0 383.8 0 482.3C0 498.7 13.3 512 29.7 512H418.3c16.4 0 29.7-13.3 29.7-29.7C448 383.8 368.2 304 269.7 304H178.3z"; }
-            else if (cls.indexOf("fa-eye") > -1) { vb = "0 0 576 512"; p = "M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 92.9-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.8-35.7-46.1-87.7-92.9-131.1C433.5 68.8 368.8 32 288 32zM144 256a144 144 0 1 1 288 0 144 144 0 1 1 -288 0zm144-64c0 35.3-28.7 64-64 64c-7.1 0-13.9-1.2-20.3-3.3c-5.5-1.8-11.9 1.6-11.7 7.5c.5 14.5 5.3 28.3 13.6 39.7C228.4 326.8 256 344 288 344c48.6 0 88-39.4 88-88c0-48.6-39.4-88-88-88c-10.4 0-20.3 1.8-29.5 5.1c-5.7 2.1-7.7 9.1-4 13.9c10 12.8 15.5 28.5 15.5 45z"; }
-            else if (cls.indexOf("fa-gun") > -1) { vb = "0 0 576 512"; p = "M528 56c0-13.3-10.7-24-24-24s-24 10.7-24 24v8H32C14.3 64 0 78.3 0 96V208c0 17.7 14.3 32 32 32H42c20.8 0 36.1 19.6 31 39.8L33 440.2c-2.4 9.6-.2 19.7 5.8 27.5S54.1 480 64 480h96c14.7 0 27.5-10 31-24.2L217 352H321.4c23.7 0 44.8-14.9 52.7-37.2L400.9 240H432c8.5 0 16.6-3.4 22.6-9.4L477.3 208H544c17.7 0 32-14.3 32-32V96c0-17.7-14.3-32-32-32H528V56zM321.4 304H229l16-64h105l-21 58.7c-1.1 3.2-4.2 5.3-7.5 5.3zM80 128H464c8.8 0 16 7.2 16 16s-7.2 16-16 16H80c-8.8 0-16-7.2-16-16s7.2-16 16-16z"; }
-            else if (cls.indexOf("fa-crosshairs") > -1) { vb = "0 0 512 512"; p = "M256 0c17.7 0 32 14.3 32 32V42.4c93.7 13.9 167.7 88 181.6 181.6H480c17.7 0 32 14.3 32 32s-14.3 32-32 32H469.6c-13.9 93.7-88 167.7-181.6 181.6V480c0 17.7-14.3 32-32 32s-32-14.3-32-32V469.6C130.3 455.7 56.3 381.7 42.4 288H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H42.4C56.3 130.3 130.3 56.3 224 42.4V32c0-17.7 14.3-32 32-32zM107.4 288c12.5 58.3 58.4 104.1 116.6 116.6V384c0-17.7 14.3-32 32-32s32 14.3 32 32v20.6c58.3-12.5 104.1-58.4 116.6-116.6H384c-17.7 0-32-14.3-32-32s14.3-32 32-32h20.6C392.1 165.7 346.3 119.9 288 107.4V128c0 17.7-14.3 32-32 32s-32-14.3-32-32V107.4C165.7 119.9 119.9 165.7 107.4 224H128c17.7 0 32 14.3 32 32s-14.3 32-32 32H107.4zM256 224a32 32 0 1 1 0 64 32 32 0 1 1 0-64z"; }
-            else if (cls.indexOf("fa-burst") > -1) { vb = "0 0 512 512"; p = "M37.6 4.2C28-2.3 15.2-1.1 7 7s-9.4 21-2.8 30.5l112 163.3L16.6 233.2C6.7 236.4 0 245.6 0 256s6.7 19.6 16.6 22.8l103.1 33.4L66.8 412.8c-4.9 9.3-3.2 20.7 4.3 28.1s18.8 9.2 28.1 4.3l100.6-52.9 33.4 103.1c3.2 9.9 12.4 16.6 22.8 16.6s19.6-6.7 22.8-16.6l33.4-103.1 100.6 52.9c9.3 4.9 20.7 3.2 28.1-4.3s9.2-18.8 4.3-28.1L392.3 312.2l103.1-33.4c9.9-3.2 16.6-12.4 16.6-22.8s-6.7-19.6-16.6-22.8L388.9 198.7l25.7-70.4c3.2-8.8 1-18.6-5.6-25.2s-16.4-8.8-25.2-5.6l-70.4 25.7L278.8 16.6C275.6 6.7 266.4 0 256 0s-19.6 6.7-22.8 16.6l-32.3 99.6L37.6 4.2z"; }
-            else if (cls.indexOf("fa-car") > -1) { vb = "0 0 512 512"; p = "M135.2 117.4L109.1 192H402.9l-26.1-74.6C372.3 104.6 360.2 96 346.6 96H165.4c-13.6 0-25.7 8.6-30.2 21.4zM39.6 196.8L74.8 96.3C88.3 57.8 124.6 32 165.4 32H346.6c40.8 0 77.1 25.8 90.6 64.3l35.2 100.5c23.2 9.6 39.6 32.5 39.6 59.2V400v48c0 17.7-14.3 32-32 32H448c-17.7 0-32-14.3-32-32V400H96v48c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32V400 256c0-26.7 16.4-49.6 39.6-59.2zM128 288a32 32 0 1 0 -64 0 32 32 0 1 0 64 0zm288 32a32 32 0 1 0 0-64 32 32 0 1 0 0 64z"; }
-            else if (cls.indexOf("fa-gear") > -1) { vb = "0 0 512 512"; p = "M495.9 166.6c3.2 8.7 .5 18.4-6.4 24.6l-43.3 39.4c1.1 8.3 1.7 16.8 1.7 25.4s-.6 17.1-1.7 25.4l43.3 39.4c6.9 6.2 9.6 15.9 6.4 24.6c-4.4 11.9-9.7 23.3-15.8 34.3l-4.7 8.1c-6.6 11-14 21.4-22.1 31.2c-5.9 7.2-15.7 9.6-24.5 6.8l-55.7-17.7c-13.4 10.3-28.2 18.9-44 25.4l-12.5 57.1c-2 9.1-9 16.3-18.2 17.8c-13.8 2.3-28 3.5-42.5 3.5s-28.7-1.2-42.5-3.5c-9.2-1.5-16.2-8.7-18.2-17.8l-12.5-57.1c-15.8-6.5-30.6-15.1-44-25.4L83.1 425.9c-8.8 2.8-18.6 .3-24.5-6.8c-8.1-9.8-15.5-20.2-22.1-31.2l-4.7-8.1c-6.1-11-11.4-22.4-15.8-34.3c-3.2-8.7-.5-18.4 6.4-24.6l43.3-39.4C64.6 273.1 64 264.6 64 256s.6-17.1 1.7-25.4L22.4 191.2c-6.9-6.2-9.6-15.9-6.4-24.6c4.4-11.9 9.7-23.3 15.8-34.3l4.7-8.1c6.6-11 14-21.4 22.1-31.2c5.9-7.2 15.7-9.6 24.5-6.8l55.7 17.7c13.4-10.3 28.2-18.9 44-25.4l12.5-57.1c2-9.1 9-16.3 18.2-17.8C227.3 1.2 241.5 0 256 0s28.7 1.2 42.5 3.5c9.2 1.5 16.2 8.7 18.2 17.8l12.5 57.1c15.8 6.5 30.6 15.1 44 25.4l55.7-17.7c8.8-2.8 18.6-.3 24.5 6.8c8.1 9.8 15.5 20.2 22.1 31.2l4.7 8.1c6.1 11 11.4 22.4 15.8 34.3zM256 336a80 80 0 1 0 0-160 80 80 0 1 0 0 160z"; }
-            else if (cls.indexOf("fa-shield") > -1) { vb = "0 0 512 512"; p = "M256 0c-4.1 0-8.1 1.4-11.3 4.1L32 188.7c-18.4 15.6-32 37.8-32 63.3V384c0 47.9 28 92.1 72.4 112l161.4 72.8c7.4 3.4 16 3.4 23.4 0l161.4-72.8c44.4-20 72.4-64.1 72.4-112V252c0-25.5-13.6-47.7-32-63.3L267.3 4.1C264.1 1.4 260.1 0 256 0zm0 464V48L464 220v164L256 464z"; }
-            else if (cls.indexOf("fa-users") > -1) { vb = "0 0 640 512"; p = "M144 0a80 80 0 1 1 0 160 80 80 0 1 1 0-160zM512 0a80 80 0 1 1 0 160 80 80 0 1 1 0-160zM0 512c0-70.7 57.3-128 128-128h64c70.7 0 128 57.3 128 128H0zM384 384c70.7 0 128 57.3 128 128H384c0-70.7 57.3-128 128-128h64z"; }
-            else if (cls.indexOf("fa-earth") > -1) { vb = "0 0 512 512"; p = "M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM177.7 321.1c-11.8-35.6 7.5-73.9 42.2-85.7l87.7-29.1c15.2-5.1 31.7-1.5 43.5 9.4l49.4 45.4c12.2 11.2 15.8 28.8 9 43.9l-25.8 57.4c-8.6 19.1-28.3 30.3-49.1 27.6l-67.2-9.1c-22.3-3-39.8-20.5-42.7-42.7zM256 96c-53 0-96 43-96 96h192c0-53-43-96-96-96z"; }
-            else if (cls.indexOf("fa-toolbox") > -1) { vb = "0 0 512 512"; p = "M176 88V56c0-13.3 10.7-24 24-24h112c13.3 0 24 10.7 24 24v32h56c35.3 0 64 28.7 64 64v336c0 35.3-28.7 64-64 64H120c-35.3 0-64-28.7-64-64V152c0-35.3 28.7-64 64-64h56zM200 56v32h112V56H200zm-88 96c-17.7 0-32 14.3-32 32v56h352v-56c0-17.7-14.3-32-32-32H112zm352 112H80v200c0 17.7 14.3 32 32 32h288c17.7 0 32-14.3 32-32V264z"; }
-            else if (cls.indexOf("fa-code") > -1) { vb = "0 0 640 512"; p = "M278.9 511.5l-61-17.7c-6.4-1.8-10-8.2-8.2-14.6L348.5 86.5c1.8-6.4 8.2-10 14.6-8.2l61 17.7c6.4 1.8 10 8.2 8.2 14.6L293.5 503.3c-1.8 6.4-8.2 10-14.6 8.2zm-114-112.2l-61-17.7c-6.4-1.8-10-8.2-8.2-14.6L112.5 19.1c1.8-6.4 8.2-10 14.6-8.2l61 17.7c6.4 1.8 10 8.2 8.2 14.6L179.5 387.1c-1.8 6.4-8.2 10-14.6 8.2z"; }
-            else if (cls.indexOf("fa-person") > -1 && cls.indexOf("fa-person-running") === -1) { vb = "0 0 448 512"; p = "M320 48a48 48 0 1 0 -96 0 48 48 0 1 0 96 0zM125.7 175.5c9.9-9.9 23.4-15.5 37.5-15.5c1.9 0 3.8 .1 5.6 .3L137.6 96c-4.3-17 4.1-34.9 20.3-40.8s33.8 1.4 41.5 17.5l56 116.6c7.4 15.4 6 33.6-3.8 47.8l-45.1 65.2 25.1 50.2 67.2-33.6c15.8-7.9 34.8-1.5 42.7 14.3s1.5 34.8-14.3 42.7l-96 48c-9.1 4.5-19.8 4-28.5-1.4L136 328l-40.4 40.4c-11.4 11.4-29.4 12.8-42.4 3.1s-14.4-28.4-3.1-41.4l51.1-51.1-37-74-45 15c-16.7 5.6-34.9-3.4-40.5-20.1s3.4-34.9 20.1-40.5l72-24c13.4-4.5 28.3-.9 38.2 9l34.8 34.8-21.1-30.5c-4.2-6.1-4.7-14.1-1.3-20.7l22.3-43.2z"; }
-            else if (cls.indexOf("fa-gauge") > -1) { vb = "0 0 512 512"; p = "M0 256a256 256 0 1 1 512 0A256 256 0 1 1 0 256zm320 96c0-26.9-16.5-49.9-40-59.3V88c0-13.3-10.7-24-24-24s-24 10.7-24 24v204.7c-23.5 9.5-40 32.5-40 59.3c0 35.3 28.7 64 64 64s64-28.7 64-64zM144 176a32 32 0 1 0 0-64 32 32 0 1 0 0 64zm-16 80a32 32 0 1 0 -64 0 32 32 0 1 0 64 0zm256-80a32 32 0 1 0 0-64 32 32 0 1 0 0 64zm16 80a32 32 0 1 0 -64 0 32 32 0 1 0 64 0z"; }
-            else if (cls.indexOf("fa-kit-medical") > -1 || cls.indexOf("fa-briefcase") > -1) { vb = "0 0 512 512"; p = "M144 112V64c0-35.3 28.7-64 64-64h96c35.3 0 64 28.7 64 64v48h80c35.3 0 64 28.7 64 64v256c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V176c0-35.3 28.7-64 64-64h80zM208 64v48h96V64H208zM192 256v64H128c-17.7 0-32 14.3-32 32s14.3 32 32 32h64v64c0 17.7 14.3 32 32 32s32-14.3 32-32v-64h64c17.7 0 32-14.3 32-32s-14.3-32-32-32h-64v-64c0-17.7-14.3-32-32-32s-32 14.3-32 32z"; }
-            else if (cls.indexOf("fa-video") > -1) { vb = "0 0 576 512"; p = "M0 128C0 92.7 28.7 64 64 64H320c35.3 0 64 28.7 64 64V384c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V128zM559.1 99.8c10.4 5.6 16.9 16.4 16.9 28.2V384c0 11.8-6.5 22.6-16.9 28.2s-23 5-32.9-1.6l-96-64L416 337.1V320 192 174.9l14.2-9.5 96-64c9.8-6.5 22.4-7.2 32.9-1.6z"; }
-            else if (cls.indexOf("fa-clock") > -1) { vb = "0 0 512 512"; p = "M256 0a256 256 0 1 1 0 512A256 256 0 1 1 256 0zM232 120V256c0 8 4 15.5 10.7 20l96 64c11 7.4 25.9 4.4 33.3-6.7s4.4-25.9-6.7-33.3L280 243.2V120c0-13.3-10.7-24-24-24s-24 10.7-24 24z"; }
-            else if (cls.indexOf("fa-palette") > -1) { vb = "0 0 512 512"; p = "M512 256c0 .9 0 1.8 0 2.7c-.4 36.5-33.6 61.3-70.1 61.3H344c-26.5 0-48 21.5-48 48c0 3.4 .4 6.7 1 9.9c7.1 38.6-21.1 74.1-60.2 74.1H224c-123.7 0-224-100.3-224-224S100.3 32 224 32s224 100.3 224 224zM112 288a48 48 0 1 0 -96 0 48 48 0 1 0 96 0zm112-80a48 48 0 1 0 0-96 48 48 0 1 0 0 96zm128-48a48 48 0 1 0 -96 0 48 48 0 1 0 96 0zm96 112a48 48 0 1 0 0-96 48 48 0 1 0 0 96z"; }
-            else if (cls.indexOf("fa-rainbow") > -1) { vb = "0 0 512 512"; p = "M0 480C0 338.6 114.6 224 256 224s256 114.6 256 256H448C448 374 362 288 256 288S64 374 64 480H0zM96 480C96 391.6 167.6 320 256 320s160 71.6 160 160H352C352 427 299 384 256 384S160 427 160 480H96zM192 480C192 444.6 220.6 416 256 416S320 444.6 320 480H192z"; }
-            else if (cls.indexOf("fa-id") > -1) { vb = "0 0 384 512"; p = "M64 48c-8.8 0-16 7.2-16 16V448c0 8.8 7.2 16 16 16H320c8.8 0 16-7.2 16-16V64c0-8.8-7.2-16-16-16H64zM0 64C0 28.7 28.7 0 64 0H320c35.3 0 64 28.7 64 64V448c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V64zm192 208a64 64 0 1 1 0-128 64 64 0 1 1 0 128zm0-168a104 104 0 1 0 0 208 104 104 0 1 0 0-208zM128 352h128c26.5 0 48 21.5 48 48v16c0 17.7-14.3 32-32 32H112c-17.7 0-32-14.3-32-32V400c0-26.5 21.5-48 48-48z"; }
-            else if (cls.indexOf("fa-wrench") > -1) { vb = "0 0 512 512"; p = "M393.2 23.4c-35.6-31.1-90.5-27-121.7 8.5c-27.1 30.7-27.1 76 0 106.7L18.6 391.6c-24.8 24.8-24.8 65.1 0 89.9s65.1 24.8 89.9 0L361.3 228.6c30.7 27.1 76 27.1 106.7 0c35.6-31.1 39.7-86 8.5-121.7L426 157.4l-58.4-58.4L418.1 48.6 393.2 23.4zM324.9 154l58.4 58.4 48.6-48.6L373.5 105.4 324.9 154z"; }
-            else if (cls.indexOf("fa-bolt") > -1 || cls.indexOf("fa-lightning") > -1) { vb = "0 0 320 512"; p = "M319.6 153.9c-.3-8.4-7.5-15.1-15.9-15.1l-143.7 0 54.4-118c2.9-6.3 .2-13.8-6.1-16.7s-13.8-.2-16.7 6.1L2.8 316.5c-4.4 9.5-.2 20.9 9.3 25.3c1.5 .7 3.2 1.2 4.9 1.4l148 11.2-54.4 118c-2.9 6.3-.2 13.8 6.1 16.7c1.7 .8 3.5 1.1 5.3 1.1c4.5 0 8.8-2.6 10.8-7l188.8-306.4c3.4-5.5 2.6-12.7-1.9-17.2s-10.4-5.8-16.1-4.7l-156.4 30.1 55.4-120.1z"; }
-            else if (cls.indexOf("fa-keyboard") > -1) { vb = "0 0 576 512"; p = "M64 64C28.7 64 0 92.7 0 128V384c0 35.3 28.7 64 64 64H512c35.3 0 64-28.7 64-64V128c0-35.3-28.7-64-64-64H64zM224 400H128c-17.7 0-32-14.3-32-32s14.3-32 32-32h96c17.7 0 32 14.3 32 32s-14.3 32-32 32zm48-96c-17.7 0-32-14.3-32-32s14.3-32 32-32s32 14.3 32 32s-14.3 32-32 32zm128 0c-17.7 0-32-14.3-32-32s14.3-32 32-32s32 14.3 32 32s-14.3 32-32 32zm64-96c-17.7 0-32-14.3-32-32s14.3-32 32-32s32 14.3 32 32s-14.3 32-32 32z"; }
-            else if (cls.indexOf("fa-discord") > -1) { vb = "0 0 640 512"; p = "M524.5 69.8a1.5 1.5 0 0 0 -.8-.7A485.1 485.1 0 0 0 404.1 32a1.8 1.8 0 0 0 -1.9 .9 337.5 337.5 0 0 0 -14.9 30.6 447.8 447.8 0 0 0 -134.4 0 309.5 309.5 0 0 0 -15.1-30.6 1.9 1.9 0 0 0 -1.9-.9A483.7 483.7 0 0 0 116.1 69.1a1.7 1.7 0 0 0 -.8 .7C39.1 183.7 18.2 294.7 28.4 404.4a2 2 0 0 0 .8 1.4A487.7 487.7 0 0 0 176 479.9a1.9 1.9 0 0 0 2.1-.7A348.2 348.2 0 0 0 208.1 430.4a1.9 1.9 0 0 0 -1-2.6 321.2 321.2 0 0 1 -45.9-21.9 1.9 1.9 0 0 1 -.2-3.1c3.1-2.3 6.2-4.7 9.1-7.1a1.8 1.8 0 0 1 1.9-.3c96.2 43.9 200.4 43.9 295.5 0a1.8 1.8 0 0 1 1.9 .2c2.9 2.4 6 4.9 9.1 7.2a1.9 1.9 0 0 1 -.2 3.1 301.4 301.4 0 0 1 -45.9 21.8 1.9 1.9 0 0 0 -1 2.6 391 391 0 0 0 30 48.8 1.9 1.9 0 0 0 2.1 .7A486 486 0 0 0 610.7 405.7a1.9 1.9 0 0 0 .8-1.4C623.7 277.6 590.9 167.5 524.5 69.8zM222.5 337.6c-29 0-52.8-26.6-52.8-59.2S193.1 219.1 222.5 219.1c29.7 0 53.3 26.8 52.8 59.2C275.3 311 251.9 337.6 222.5 337.6zm195.4 0c-29 0-52.8-26.6-52.8-59.2S388.4 219.1 417.9 219.1c29.7 0 53.3 26.8 52.8 59.2C470.7 311 447.5 337.6 417.9 337.6z"; }
-            else p = "M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512z";
-            return '<svg class="menu-svg-icon" viewBox="' + vb + '" fill="currentColor">' + '<path d="' + p + '"></path></svg>';
+    ],
+    settings: [
+        {
+            group: "Theme",
+            icon: "fa-palette",
+            items: [
+                { id: "change_bind", label: "Change Bind [...]", type: "action" },
+                { id: "menu_accent", label: "Menu Accent", type: "accent", value: "solaris" },
+                { id: "rgb_rainbow", label: "RGB Rainbow", type: "toggle", value: false },
+                { id: "menu_alpha", label: "Transparency", type: "slider", value: 90 }
+            ]
         }
+    ]
+};
 
-        /* ---- Item markup builder (superset of every supported control) ---- */
-        function buildItemHtml(item, i) {
-            if (item.type === "separator") {
-                return '<div class="menu-separator" data-index="' + i + '">' +
-                    '<span class="separator-line"></span>' +
-                    '<span class="separator-text">' + esc(item.label) + '</span>' +
-                    '<span class="separator-line"></span>' +
-                    '</div>';
-            }
+let currentCategory = 'player';
+let searchQuery = '';
+let isAutoScrolling = false;
 
-            var right = "";
-            switch (item.type) {
-                case "submenu":
-                    right = '<span class="item-arrow" aria-hidden="true">&gt;</span>';
-                    break;
-                case "toggle":
-                    right = '<div class="toggle-switch ' + (item.value ? "on" : "") + '"><div class="toggle-knob"></div></div>';
-                    break;
-                case "slider": {
-                    var span = (item.max - item.min) || 1;
-                    var pct = ((item.value - item.min) / span) * 100;
-                    right = '<div class="slider-container">' +
-                        '<div class="slider-track"><div class="slider-fill" style="width:' + pct + '%"></div></div>' +
-                        '<span class="slider-value">' + esc(item.value) + esc(item.unit || "") + '</span>' +
-                        '</div>';
-                    break;
-                }
-                case "action":
-                    right = '<span class="item-arrow item-arrow--dim" aria-hidden="true">&gt;</span>';
-                    break;
-                case "array": {
-                    var label = (item.options && item.options[item.value] != null)
-                        ? item.options[item.value] : "";
-                    right = '<div class="array-container">' +
-                        '<span class="array-arrow left-arrow">‹</span>' +
-                        '<span class="array-value">' + esc(label) + '</span>' +
-                        '<span class="array-arrow right-arrow">›</span>' +
-                        '</div>';
-                    break;
-                }
-                case "value":
-                    right = '<div class="array-container">' +
-                        '<span class="array-arrow left-arrow">‹</span>' +
-                        '<span class="array-value">' + esc(item.valueStr) + '</span>' +
-                        '<span class="array-arrow right-arrow">›</span>' +
-                        '</div>';
-                    break;
-                case "color":
-                    right = '<div class="color-preview" style="background-color:' + esc(item.value) + '"></div>';
-                    break;
-                case "info":
-                    right = '<span class="info-value">' + esc(item.valueStr) + '</span>';
-                    break;
-                case "keybind":
-                    right = '<span class="keybind-badge' + (item.listening ? " listening" : "") + '">' +
-                        esc(item.listening ? "..." : (item.keyStr || "—")) + '</span>';
-                    break;
-            }
+// DOM Elements
+const tileGrid = document.getElementById('tile-grid');
+const searchInput = document.getElementById('function-search');
+const notification = document.getElementById('notification');
 
-            var iconHtml = (item.type === "submenu" && item.icon)
-                ? '<span class="item-icon">' + getIconSvg(item.icon) + '</span>' : "";
+function init() {
+    renderAll();
+    setupEvents();
+    setupObservers();
+}
 
-            var nameHtml;
-            if (item.desc) {
-                nameHtml = '<span class="item-name-wrap">' +
-                    '<span class="item-name">' + esc(item.label) + '</span>' +
-                    '<span class="item-desc">' + esc(item.desc) + '</span>' +
-                    '</span>';
-            } else {
-                nameHtml = '<span class="item-name">' + esc(item.label) + '</span>';
-            }
+/* ---- Render ALL categories ---- */
+function renderAll() {
+    tileGrid.innerHTML = '';
+    
+    Object.keys(menuData).forEach(catId => {
+        const categoryData = menuData[catId];
+        
+        const section = document.createElement('div');
+        section.className = 'category-section';
+        section.id = `section-${catId}`;
+        section.setAttribute('data-category', catId);
 
-            // Optional keybind badge (shown when a feature is bound, or while
-            // listening for a key after F11). Appears just left of the control.
-            var bindHtml = "";
-            if (item.listening) {
-                bindHtml = '<span class="bind-badge listening">[ press key ]</span>';
-            } else if (item.bind || item.keyStr) {
-                bindHtml = '<span class="bind-badge">' + esc(item.bind || item.keyStr) + '</span>';
-            }
+        const header = document.createElement('div');
+        header.className = 'category-header';
+        header.innerHTML = `<span>${catId.replace('_', ' ')}</span>`;
+        section.appendChild(header);
 
-            var cls = "menu-item" + (item.type === "info" ? " is-info" : "");
-            return '<div class="' + cls + '" data-index="' + i + '">' +
-                   iconHtml + nameHtml + bindHtml + right + '</div>';
-        }
+        let itemsRendered = 0;
 
-        function getScrollLerp() {
-            return SCROLL_LERP[scrollMode] != null ? SCROLL_LERP[scrollMode] : SCROLL_LERP[2];
-        }
+        categoryData.forEach((group, groupIdx) => {
+            const filteredItems = group.items.filter(item =>
+                item.label.toLowerCase().includes(searchQuery)
+            );
 
-        function getSelectorMs() {
-            return SEL_MS[selectorMode] != null ? SEL_MS[selectorMode] : 0;
-        }
+            if (filteredItems.length === 0) return;
 
-        function setScrollMode(mode) {
-            var m = parseInt(mode, 10);
-            scrollMode = (m >= 1 && m <= 3) ? m : 1;
-        }
+            const tile = document.createElement('div');
+            tile.className = 'tile tile-entry-anim';
+            tile.style.animationDelay = `${groupIdx * 60}ms`;
 
-        function setMenuSpeed(mode) {
-            var m = parseInt(mode, 10);
-            selectorMode = (m >= 1 && m <= 3) ? m : 3;
-        }
+            const tileHeader = `
+                <div class="tile-header">
+                    <i class="fa-solid ${group.icon} tile-icon"></i>
+                    <span>${group.group}</span>
+                </div>
+            `;
 
-        function stopScrollLoop() {
-            if (scrollLoop.raf) {
-                cancelAnimationFrame(scrollLoop.raf);
-                scrollLoop.raf = null;
-            }
-        }
+            const itemsContainer = document.createElement('div');
+            itemsContainer.className = 'tile-items';
 
-        function computeScrollTarget(node) {
-            if (!node || !dom.list) return 0;
-            var list = dom.list;
-            var pad = 10;
-            var itemTop = node.offsetTop;
-            var itemH = node.offsetHeight;
-            var viewH = list.clientHeight;
-            var maxScroll = Math.max(0, list.scrollHeight - viewH);
-            var st = list.scrollTop;
-            var itemBottom = itemTop + itemH;
-            var viewBottom = st + viewH;
-            if (itemTop < st + pad) return Math.max(0, itemTop - pad);
-            if (itemBottom > viewBottom - pad) return Math.min(maxScroll, itemBottom - viewH + pad);
-            return st;
-        }
+            filteredItems.forEach((item, itemIdx) => {
+                const delay = `${(groupIdx * 60) + (itemIdx * 30) + 80}ms`;
 
-        function runScrollLoop() {
-            if (!dom.list) return;
-            var lerp = getScrollLerp();
-            if (lerp >= 1) {
-                dom.list.scrollTop = scrollLoop.target;
-                stopScrollLoop();
-                skipScrollSync = false;
-                updateScrollbar();
-                return;
-            }
-            var current = dom.list.scrollTop;
-            var diff = scrollLoop.target - current;
-            if (Math.abs(diff) < 0.5) {
-                dom.list.scrollTop = scrollLoop.target;
-                stopScrollLoop();
-                skipScrollSync = false;
-                updateScrollbar();
-                return;
-            }
-            dom.list.scrollTop = current + diff * lerp;
-            updateScrollbar();
-            scrollLoop.raf = requestAnimationFrame(runScrollLoop);
-        }
+                if (item.type === 'accent') {
+                    const itemEl = document.createElement('div');
+                    itemEl.className = 'function-item item-entry-anim';
+                    itemEl.style.animationDelay = delay;
 
-        function scrollToNode(node, instant) {
-            if (!node || !dom.list) return;
-            scrollLoop.target = computeScrollTarget(node);
-            stopScrollLoop();
-            skipScrollSync = true;
-            if (instant || getScrollLerp() >= 1) {
-                dom.list.scrollTop = scrollLoop.target;
-                skipScrollSync = false;
-                updateScrollbar();
-                return;
-            }
-            runScrollLoop();
-        }
+                    const colors = [
+                        { name: 'solaris', hex: '#00b585', rgb: '0, 181, 133', bright: '#00e0a5' },
+                        { name: 'green', hex: '#22c55e', rgb: '34, 197, 94', bright: '#4ade80' },
+                        { name: 'blue', hex: '#3b82f6', rgb: '59, 130, 246', bright: '#60a5fa' },
+                        { name: 'purple', hex: '#a855f7', rgb: '168, 85, 247', bright: '#c084fc' },
+                        { name: 'red', hex: '#ef4444', rgb: '239, 68, 68', bright: '#f87171' },
+                        { name: 'pink', hex: '#ec4899', rgb: '236, 72, 153', bright: '#f472b6' },
+                        { name: 'amber', hex: '#eab308', rgb: '234, 179, 8', bright: '#facc15' },
+                        { name: 'cyan', hex: '#06b6d4', rgb: '6, 182, 212', bright: '#22d3ee' }
+                    ];
 
-        function selectorTopForNode(node) {
-            if (!node) return 0;
-            var base = dom.contentMain || dom.content;
-            if (!base) return 0;
-            var baseRect = base.getBoundingClientRect();
-            var nodeRect = node.getBoundingClientRect();
-            return nodeRect.top - baseRect.top;
-        }
-
-        function syncSelectorToActive(animate) {
-            if (!dom.list || !dom.selector) return;
-            var node = dom.list.querySelector('.menu-item[data-index="' + activeIndex + '"]');
-            if (node) syncSelector(node, animate);
-        }
-
-        function bindListScrollSync() {
-            if (!dom.list || dom.list._selScrollBound) return;
-            dom.list._selScrollBound = true;
-            dom.list.addEventListener("scroll", function () {
-                if (transitioning || skipScrollSync) return;
-                syncSelectorToActive(false);
-            }, { passive: true });
-        }
-
-        function syncSelector(node, animate) {
-            if (!dom.selector || !node) return;
-            var ms = animate ? getSelectorMs() : 0;
-            dom.selector.style.visibility = "visible";
-            dom.selector.style.transition = ms
-                ? ("top " + ms + "ms cubic-bezier(0.22, 1, 0.36, 1), opacity 0.1s ease")
-                : "none";
-            dom.selector.style.height = node.offsetHeight + "px";
-            dom.selector.style.top = selectorTopForNode(node) + "px";
-            dom.selector.style.opacity = "1";
-        }
-
-        function hideSelector() {
-            if (!dom.selector) return;
-            dom.selector.style.transition = "none";
-            dom.selector.style.opacity = "0";
-            dom.selector.style.visibility = "hidden";
-        }
-
-        function render(items, activeIdx, animateDir, onReady) {
-            bindListScrollSync();
-            currentItems = items || [];
-            var html = "";
-            for (var i = 0; i < currentItems.length; i++) html += buildItemHtml(currentItems[i], i);
-
-            var commit = function (holdSelector) {
-                stopScrollLoop();
-                hideSelector();
-                dom.list.innerHTML = html;
-                dom.list.scrollTop = 0;
-                setActive(activeIdx, true, true, !!holdSelector);
-                adjustHeight();
-                if (onReady) onReady();
-            };
-
-            if (animateDir && dom.viewport && !document.body.classList.contains("dui-mode")) {
-                transitioning = true;
-                hideSelector();
-                var fwd = animateDir === "forward";
-                dom.viewport.classList.remove(
-                    "page-out-forward", "page-out-backward",
-                    "page-in-forward", "page-in-backward"
-                );
-                dom.viewport.style.opacity = "";
-                dom.viewport.style.transform = "";
-                dom.viewport.style.filter = "";
-                dom.viewport.classList.add(fwd ? "page-out-forward" : "page-out-backward");
-                setTimeout(function () {
-                    commit(true);
-                    dom.viewport.classList.remove("page-out-forward", "page-out-backward");
-                    void dom.viewport.offsetWidth;
-                    dom.viewport.classList.add(fwd ? "page-in-forward" : "page-in-backward");
-                    requestAnimationFrame(function () {
-                        requestAnimationFrame(function () {
-                            syncSelectorToActive(true);
-                        });
+                    let selectorHtml = '<div class="accent-color-selector">';
+                    colors.forEach(c => {
+                        const activeClass = item.value === c.name ? 'active' : '';
+                        selectorHtml += `<div class="accent-dot ${activeClass}" style="background-color: ${c.hex};" data-color="${c.name}"></div>`;
                     });
-                    setTimeout(function () {
-                        dom.viewport.classList.remove("page-in-forward", "page-in-backward");
-                        dom.viewport.style.opacity = "";
-                        dom.viewport.style.transform = "";
-                        dom.viewport.style.filter = "";
-                        syncSelectorToActive(false);
-                        transitioning = false;
-                    }, PAGE_IN_MS);
-                }, PAGE_OUT_MS);
-            } else {
-                if (dom.viewport) {
-                    dom.viewport.classList.remove(
-                        "page-out-forward", "page-out-backward",
-                        "page-in-forward", "page-in-backward"
-                    );
-                    dom.viewport.style.opacity = "";
-                    dom.viewport.style.transform = "";
-                    dom.viewport.style.filter = "";
-                }
-                commit(false);
-            }
-        }
+                    selectorHtml += '</div>';
 
-        function setActive(index, instantScroll, instantSelector, holdSelector) {
-            index = parseInt(index, 10);
-            if (isNaN(index) || index < 0) index = 0;
-            if (!holdSelector && index === activeIndex && dom.list) {
-                var cur = dom.list.querySelector('.menu-item[data-index="' + index + '"]');
-                if (cur) {
-                    syncSelector(cur, false);
-                    scrollToNode(cur, true);
-                    updatePageCount();
-                    updateScrollbar();
+                    itemEl.innerHTML = `
+                        <span class="function-label">${item.label}</span>
+                        <div class="function-control">${selectorHtml}</div>
+                    `;
+
+                    itemEl.querySelectorAll('.accent-dot').forEach(dot => {
+                        dot.onclick = () => {
+                            const colName = dot.getAttribute('data-color');
+                            item.value = colName;
+
+                            const isRgbActive = menuData.settings[0].items.find(i => i.id === 'rgb_rainbow').value;
+                            if (!isRgbActive) {
+                                const c = colors.find(color => color.name === colName);
+                                setAccentColor(c.hex, c.rgb, c.bright);
+                            }
+
+                            itemEl.querySelectorAll('.accent-dot').forEach(d => d.classList.remove('active'));
+                            dot.classList.add('active');
+
+                            onInteraction(item.id, colName);
+                        };
+                    });
+
+                    itemsContainer.appendChild(itemEl);
+                    itemsRendered++;
                     return;
                 }
-            }
 
-            var nodes = dom.list ? dom.list.children : [];
-            var activeNode = null;
-            for (var i = 0; i < nodes.length; i++) {
-                if (!nodes[i].classList.contains("menu-item")) continue;
-                var idx = parseInt(nodes[i].getAttribute("data-index"), 10);
-                if (idx === index) {
-                    nodes[i].classList.add("active");
-                    activeNode = nodes[i];
+                const itemEl = document.createElement('div');
+                itemEl.className = 'function-item item-entry-anim';
+                if (item.type === 'toggle' && item.value) {
+                    itemEl.classList.add('toggled-on');
+                }
+                itemEl.style.animationDelay = delay;
+
+                let control = '';
+                if (item.type === 'toggle') {
+                    control = `<div class="toggle-switch ${item.value ? 'on' : ''}" data-id="${item.id}"></div>`;
+                } else if (item.type === 'slider') {
+                    control = `
+                        <div class="slider-wrap">
+                            <input type="range" min="0" max="100" value="${item.value}" data-id="${item.id}">
+                            <span class="slider-val">${item.value}${item.unit || ''}</span>
+                        </div>
+                    `;
                 } else {
-                    nodes[i].classList.remove("active");
+                    control = `<span class="action-btn">${item.value || '<i class="fa-solid fa-chevron-right"></i>'}</span>`;
                 }
-            }
-            activeIndex = index;
-            if (!activeNode) {
-                hideSelector();
-                updatePageCount();
-                updateScrollbar();
-                return;
-            }
-            if (!holdSelector) {
-                syncSelector(activeNode, !instantSelector && getSelectorMs() > 0);
-            }
-            scrollToNode(activeNode, !!instantScroll);
-            updatePageCount();
-            updateScrollbar();
-        }
 
-        function updatePageCount() {
-            if (!dom.pageCount) return;
-            var total = 0, num = 0;
-            for (var j = 0; j < currentItems.length; j++) {
-                if (currentItems[j].type !== "separator") {
-                    total++;
-                    if (j === activeIndex) num = total;
+                itemEl.innerHTML = `
+                    <span class="function-label">${item.label}</span>
+                    <div class="function-control">${control}</div>
+                `;
+
+                // Interaction logic
+                if (item.type === 'toggle') {
+                    itemEl.querySelector('.toggle-switch').onclick = (e) => {
+                        item.value = !item.value;
+                        e.currentTarget.classList.toggle('on');
+                        itemEl.classList.toggle('toggled-on', item.value); 
+                        onInteraction(item.id, item.value);
+
+                        if (item.id === 'rgb_rainbow') {
+                            if (item.value) {
+                                startRGBRainbow();
+                            } else {
+                                stopRGBRainbow();
+                            }
+                        }
+                    };
+                } else if (item.type === 'slider') {
+                    const slider = itemEl.querySelector('input');
+                    const valDisplay = itemEl.querySelector('.slider-val');
+                    slider.oninput = (e) => {
+                        item.value = e.target.value;
+                        valDisplay.textContent = `${item.value}${item.unit || ''}`;
+                        onInteraction(item.id, item.value);
+                    };
+                } else {
+                    itemEl.onclick = () => {
+                        if (item.id === 'change_bind') {
+                            startListeningForKey(item, itemEl);
+                        } else {
+                            onInteraction(item.id, 'executed');
+                            showNotify(`Action: ${item.label}`);
+                        }
+                    };
                 }
-            }
-            dom.pageCount.textContent = (total ? num : 0) + "/" + total;
-        }
 
-        function nodeForItemIndex(index) {
-            if (!dom.list) return null;
-            var node = dom.list.querySelector('.menu-item[data-index="' + index + '"]');
-            if (node) return node;
-            return dom.list.children[index] || null;
-        }
-
-        function refreshBindBadge(node, item) {
-            if (!node || !item) return;
-            if (item.type !== "toggle" && item.type !== "action") return;
-
-            var label = item.listening ? null : (item.bind || item.keyStr || null);
-            if (label === "" || label === false) label = null;
-            var existing = node.querySelector(".bind-badge");
-
-            if (item.listening) {
-                if (!existing) {
-                    existing = document.createElement("span");
-                    var ctrl = node.querySelector(".toggle-switch, .item-arrow");
-                    node.insertBefore(existing, ctrl || null);
-                }
-                existing.textContent = "[ press key ]";
-                existing.className = "bind-badge listening";
-                return;
-            }
-
-            if (label) {
-                if (!existing) {
-                    existing = document.createElement("span");
-                    var ctrl2 = node.querySelector(".toggle-switch, .item-arrow");
-                    node.insertBefore(existing, ctrl2 || null);
-                }
-                existing.textContent = label;
-                existing.className = "bind-badge";
-            } else if (existing) {
-                existing.parentNode.removeChild(existing);
-            }
-        }
-
-        /* Patch a single item's control in place (no full re-render) */
-        function updateItem(index, patch) {
-            var item = currentItems[index];
-            var node = nodeForItemIndex(index);
-            if (!item || !node) return;
-            for (var k in patch) if (patch.hasOwnProperty(k)) item[k] = patch[k];
-
-            if (item.type === "toggle") {
-                if (patch.hasOwnProperty("value")) item.value = !!patch.value;
-                var sw = node.querySelector(".toggle-switch");
-                if (sw) {
-                    sw.classList.toggle("on", !!item.value);
-                }
-            } else if (item.type === "slider") {
-                var span = (item.max - item.min) || 1;
-                var pct = ((item.value - item.min) / span) * 100;
-                var fill = node.querySelector(".slider-fill");
-                var val = node.querySelector(".slider-value");
-                if (fill) fill.style.width = pct + "%";
-                if (val) val.textContent = item.value + (item.unit || "");
-            } else if (item.type === "array") {
-                var av = node.querySelector(".array-value");
-                if (av && item.options) av.textContent = item.options[item.value] != null ? item.options[item.value] : "";
-            } else if (item.type === "value") {
-                var vv = node.querySelector(".array-value");
-                if (vv) vv.textContent = item.valueStr;
-            } else if (item.type === "color") {
-                var sw2 = node.querySelector(".color-preview");
-                if (sw2) sw2.style.backgroundColor = item.value;
-            } else if (item.type === "info") {
-                var iv = node.querySelector(".info-value");
-                if (iv) iv.textContent = item.valueStr;
-            } else if (item.type === "keybind") {
-                var kb = node.querySelector(".keybind-badge");
-                if (kb) {
-                    kb.classList.toggle("listening", !!item.listening);
-                    kb.textContent = item.listening ? "..." : (item.keyStr || "—");
-                }
-            }
-
-            if (patch.hasOwnProperty("listening")) item.listening = !!patch.listening;
-            if (patch.hasOwnProperty("bind")) item.bind = patch.bind || null;
-            if (patch.hasOwnProperty("keyStr")) item.keyStr = patch.keyStr || null;
-            refreshBindBadge(node, item);
-        }
-
-        function setBindBadge(index, label, listening) {
-            var item = currentItems[index];
-            var node = nodeForItemIndex(index);
-            if (!item || !node) return;
-            item.listening = !!listening;
-            if (label && label !== "") {
-                item.bind = label;
-                item.keyStr = label;
-            } else {
-                item.bind = null;
-                item.keyStr = null;
-            }
-            refreshBindBadge(node, item);
-        }
-
-        function pressFeedback(index) {
-            var node = nodeForItemIndex(index);
-            if (!node) return;
-            node.classList.add("pressed");
-            setTimeout(function () { if (node) node.classList.remove("pressed"); }, 120);
-        }
-
-        function flashArrow(index, dir) {
-            var node = dom.list.children[index];
-            if (!node) return;
-            var arrow = node.querySelector(dir === "left" ? ".left-arrow" : ".right-arrow");
-            if (arrow) {
-                arrow.classList.add("pressed");
-                setTimeout(function () { if (arrow) arrow.classList.remove("pressed"); }, 100);
-            }
-        }
-
-        function measureListContentHeight() {
-            if (!dom.list) return MENU_MIN_HEIGHT;
-            var sum = 0;
-            var kids = dom.list.children;
-            for (var i = 0; i < kids.length; i++) {
-                sum += kids[i].offsetHeight || 0;
-            }
-            var cs = window.getComputedStyle(dom.list);
-            var pad = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
-            return sum + pad;
-        }
-
-        /* ---- Dynamic height + custom scrollbar ---- */
-        function adjustHeight() {
-            if (!dom.list) return;
-            dom.list.style.height = "auto";
-            dom.list.style.maxHeight = "none";
-            dom.list.style.overflowY = "hidden";
-            var content = measureListContentHeight();
-            var h = content;
-            var needsScroll = content > MENU_MAX_HEIGHT;
-            if (needsScroll) h = MENU_MAX_HEIGHT;
-            if (h < MENU_MIN_HEIGHT) h = MENU_MIN_HEIGHT;
-            dom.list.style.height = h + "px";
-            dom.list.style.maxHeight = needsScroll ? (MENU_MAX_HEIGHT + "px") : "none";
-            dom.list.style.overflowY = needsScroll ? "auto" : "hidden";
-            if (dom.viewport) {
-                dom.viewport.style.height = h + "px";
-                dom.viewport.style.minHeight = "0";
-            }
-            if (dom.content) dom.content.style.minHeight = "0";
-            requestAnimationFrame(function () {
-                updateScrollbar();
-                var node = dom.list.querySelector('.menu-item[data-index="' + activeIndex + '"]');
-                if (node && dom.selector && dom.selector.style.opacity !== "0") {
-                    syncSelector(node, false);
-                }
+                itemsContainer.appendChild(itemEl);
+                itemsRendered++;
             });
+
+            tile.innerHTML = tileHeader;
+            tile.appendChild(itemsContainer);
+            section.appendChild(tile);
+        });
+
+        if (itemsRendered > 0) {
+            tileGrid.appendChild(section);
         }
-
-        function listOffsetInContainer() {
-            if (!dom.list || !dom.container) return 0;
-            var top = 0;
-            var el = dom.list;
-            while (el && el !== dom.container) {
-                top += el.offsetTop || 0;
-                el = el.offsetParent;
-            }
-            return top;
-        }
-
-        function updateScrollbar() {
-            if (!dom.track || !dom.thumb || !dom.list || !dom.trackInner) return;
-            requestAnimationFrame(function () {
-                var sh = dom.list.scrollHeight;
-                var ch = dom.list.clientHeight;
-                var st = dom.list.scrollTop;
-                var trackH = Math.max(ch, 48);
-                dom.track.style.top = listOffsetInContainer() + "px";
-                dom.track.style.height = trackH + "px";
-                dom.trackInner.style.height = Math.max(20, trackH - 32) + "px";
-
-                if (sh <= ch || ch === 0) {
-                    dom.track.classList.add("is-idle");
-                    dom.thumb.style.height = "100%";
-                    dom.thumb.style.top = "0px";
-                    return;
-                }
-                dom.track.classList.remove("is-idle");
-
-                var innerH = dom.trackInner.clientHeight;
-                var th = Math.max(24, (ch / sh) * innerH);
-                dom.thumb.style.height = th + "px";
-                var maxTravel = Math.max(0, innerH - th);
-                var maxScroll = sh - ch;
-                var y = maxScroll > 0 ? (st / maxScroll) * maxTravel : 0;
-                dom.thumb.style.top = y + "px";
-            });
-        }
-
-        /* ---- Tabs ---- */
-        function renderTabs(tabs, activeId, onClick) {
-            var html = "";
-            for (var i = 0; i < tabs.length; i++) {
-                html += '<div class="tab' + (tabs[i].id === activeId ? " active" : "") +
-                    '" data-tab="' + esc(tabs[i].id) + '">' + esc(tabs[i].label) + '</div>';
-            }
-            dom.tabs.innerHTML = html;
-            if (onClick) {
-                var els = dom.tabs.querySelectorAll(".tab");
-                for (var j = 0; j < els.length; j++) {
-                    (function (id) {
-                        els[j].addEventListener("click", function () { onClick(id); });
-                    })(els[j].getAttribute("data-tab"));
-                }
-            }
-        }
-
-        /* ---- Header identity ---- */
-        function setHeader(data) {
-            if (data.name != null && dom.biName) dom.biName.textContent = data.name;
-            if (data.sub != null && dom.biSub) dom.biSub.textContent = data.sub;
-            if (data.avatar && dom.biAvatar) dom.biAvatar.src = data.avatar;
-            if (data.brand != null) {
-                var brandEl = document.getElementById("banner-brand");
-                if (brandEl) brandEl.textContent = String(data.brand).toUpperCase();
-            }
-        }
-
-        /* ---- Visibility ---- */
-        function setVisible(visible) {
-            if (!dom.container) return;
-            dom.container.classList.toggle("hidden", !visible);
-        }
-
-        /* ---- Screen position (Lua position sliders, % of viewport) ---- */
-        function setPosition(x, y) {
-            if (!dom.container) return;
-            var px = Math.max(0, Math.min(95, Number(x) || 0));
-            var py = Math.max(0, Math.min(95, Number(y) || 0));
-            dom.container.style.left = px + "vw";
-            dom.container.style.top = py + "vh";
-            dom.container.style.right = "auto";
-            dom.container.style.bottom = "auto";
-        }
-
-        /* Monitor presets (1080p baseline). Lua sends scale for Auto from real resolution. */
-        var MONITOR_PRESETS = [
-            { id: 1, label: "1920×1080", scale: 1.0 },
-            { id: 2, label: "2560×1440", scale: 2560 / 1920 },
-            { id: 3, label: "3840×2160", scale: 3840 / 1920 },
-            { id: 4, label: "7680×4320", scale: 7680 / 1920 },
-            { id: 5, label: "Auto", scale: 1.0 }
-        ];
-        var menuSizeScale = 1.0;
-        var monitorResScale = 1.0;
-
-        function applyCombinedScale() {
-            if (!dom.container) return;
-            /* In-game DUI: Lua DrawSprite handles size — CSS scale shrinks the texture twice */
-            if (document.body.classList.contains("dui-mode")) {
-                dom.container.style.zoom = "";
-                dom.container.style.transform = "none";
-                return;
-            }
-            var s = menuSizeScale * monitorResScale;
-            s = Math.max(0.65, Math.min(4.8, s));
-            dom.container.style.zoom = "";
-            dom.container.style.transform = "scale(" + s + ")";
-            dom.container.style.transformOrigin = "top left";
-        }
-
-        function setMonitorResolution(scale, presetIndex) {
-            var s = Number(scale);
-            if (!s || s <= 0) {
-                var preset = MONITOR_PRESETS[(parseInt(presetIndex, 10) || 5) - 1];
-                s = preset ? preset.scale : 1;
-            }
-            monitorResScale = Math.max(0.85, Math.min(4.8, s));
-            applyCombinedScale();
-        }
-
-        /* Menu Size (Small / Medium / Large) — multiplied with monitor scale */
-        function setScale(scale) {
-            var s = Number(scale);
-            if (!s || s <= 0) s = 1;
-            menuSizeScale = Math.max(0.6, Math.min(1.6, s));
-            applyCombinedScale();
-        }
-
-        /* ---- Toast notifications ---- */
-        function notify(opts) {
-            if (!dom.toastStack) return;
-            opts = opts || {};
-            var kind = opts.kind || "info";
-            var icons = { info: "ℹ", success: "✓", error: "✕", warning: "!" };
-            var el = document.createElement("div");
-            el.className = "toast type-" + kind;
-            el.innerHTML =
-                '<span class="toast-icon">' + (icons[kind] || icons.info) + '</span>' +
-                '<div class="toast-body">' +
-                '<span class="toast-title">' + esc(opts.title || "Solaris") + '</span>' +
-                (opts.text ? '<span class="toast-text">' + esc(opts.text) + '</span>' : "") +
-                '</div>';
-            dom.toastStack.appendChild(el);
-            requestAnimationFrame(function () { el.classList.add("show"); });
-            var dur = opts.duration || 3200;
-            setTimeout(function () {
-                el.classList.remove("show");
-                setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 450);
-            }, dur);
-        }
-
-        function isTransitioning() { return transitioning; }
-        function items() { return currentItems; }
-        function getActive() { return activeIndex; }
-
-        return {
-            render: render, setActive: setActive, updateItem: updateItem,
-            setBindBadge: setBindBadge, refreshBindBadge: refreshBindBadge,
-            pressFeedback: pressFeedback, flashArrow: flashArrow,
-            renderTabs: renderTabs, setHeader: setHeader, setVisible: setVisible,
-            setPosition: setPosition, setScale: setScale, setMonitorResolution: setMonitorResolution,
-            setScrollMode: setScrollMode, setMenuSpeed: setMenuSpeed, monitorPresets: MONITOR_PRESETS,
-            notify: notify, updateScrollbar: updateScrollbar,
-            isTransitioning: isTransitioning, items: items, getActive: getActive
-        };
-    })();
-
-    /* ============================================================================
-     *  BRIDGE — receives commands from the Lua core (DUI messages)
-     * ==========================================================================*/
-    var driven = false;
-
-    function handleMessage(msg) {
-        if (!msg || typeof msg.type !== "string" || msg.type.indexOf("solaris:") !== 0) return;
-        driven = true;
-        document.body.classList.remove("standalone");
-
-        switch (msg.type) {
-            case "solaris:ping":
-                if (dom.biSub) dom.biSub.textContent = "Lua connected";
-                if (dom.pageCount) dom.pageCount.textContent = "↑↓ · Enter · ←";
-                break;
-            case "solaris:init":
-                document.documentElement.classList.add("dui-mode");
-                document.body.classList.add("dui-mode");
-                if (msg.theme) Theme.set(msg.theme[0], msg.theme[1], msg.theme[2]);
-                View.setHeader({
-                    name: msg.brand || "Solaris",
-                    sub: msg.version ? ("v" + msg.version + " — connected") : "connected",
-                    brand: msg.brand || "SOLARIS"
-                });
-                break;
-            case "solaris:setVisible":
-                View.setVisible(!!msg.visible);
-                break;
-            case "solaris:setHeader":
-                View.setHeader(msg);
-                break;
-            case "solaris:setTabs":
-                View.renderTabs(msg.tabs || [], msg.activeTab, function (id) {
-                    postToLua({ action: "tabClick", tab: id });
-                });
-                break;
-            case "solaris:setPage":
-                View.setVisible(true);
-                View.render(
-                    msg.items || [],
-                    msg.activeIndex != null ? msg.activeIndex : 0,
-                    document.body.classList.contains("dui-mode") ? null : (msg.animateDir || null)
-                );
-                break;
-            case "solaris:setActive":
-                View.setVisible(true);
-                View.setActive(msg.index != null ? msg.index : 0, true, true);
-                break;
-            case "solaris:setMenuSpeed":
-                View.setMenuSpeed(msg.mode != null ? msg.mode : 3);
-                break;
-            case "solaris:updateItem":
-                View.updateItem(msg.index, msg.patch || {});
-                break;
-            case "solaris:setBindBadge":
-                View.setBindBadge(
-                    msg.index != null ? msg.index : 0,
-                    msg.bind || msg.keyStr || null,
-                    !!msg.listening
-                );
-                break;
-            case "solaris:setTheme":
-                if (msg.rainbow === true) Theme.startRainbow();
-                else if (msg.rainbow === false) { Theme.stopRainbow(); if (msg.r != null) Theme.set(msg.r, msg.g, msg.b); }
-                else Theme.set(msg.r, msg.g, msg.b);
-                break;
-            case "solaris:setPosition":
-                View.setPosition(msg.x, msg.y);
-                break;
-            case "solaris:setScale":
-                View.setScale(msg.scale);
-                break;
-            case "solaris:setMonitorResolution":
-                View.setMonitorResolution(msg.scale, msg.preset);
-                break;
-            case "solaris:setScrollMode":
-                View.setScrollMode(msg.mode != null ? msg.mode : 2);
-                break;
-            case "solaris:notify":
-                View.notify(msg);
-                break;
-            case "solaris:pressFeedback":
-                View.pressFeedback(msg.index);
-                break;
-            case "solaris:flashArrow":
-                View.flashArrow(msg.index, msg.dir);
-                break;
-            case "solaris:setKeybindState": {
-                var nodes = dom.list ? dom.list.children : [];
-                var idx = msg.index;
-                if (nodes[idx]) {
-                    var kbVal = nodes[idx].querySelector(".keybind-value, .array-value");
-                    if (kbVal) kbVal.textContent = msg.listening ? "[ Press a key... ]" : (kbVal.dataset.key || kbVal.textContent);
-                    nodes[idx].classList.toggle("keybind-listening", !!msg.listening);
-                }
-                break;
-            }
-        }
-    }
-
-    /* Optional JS -> Lua channel. Only works if the executor exposes a NUI
-       callback endpoint; harmless no-op otherwise. Lua never depends on it. */
-    function postToLua(payload) {
-        try {
-            if (window.invokeNative && window.GetParentResourceName) {
-                fetch("https://" + window.GetParentResourceName() + "/solaris", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json; charset=UTF-8" },
-                    body: JSON.stringify(payload)
-                }).catch(function () {});
-            }
-        } catch (e) { /* ignore */ }
-    }
-
-    function parseDuiPayload(data) {
-        if (data == null) return null;
-        if (typeof data === "string") {
-            try { return JSON.parse(data); } catch (e) { return null; }
-        }
-        return data;
-    }
-
-    function unwrapMessage(raw) {
-        var msg = parseDuiPayload(raw);
-        if (msg) return msg;
-        if (raw && typeof raw === "object") {
-            msg = parseDuiPayload(raw.data);
-            if (msg) return msg;
-            msg = parseDuiPayload(raw.message);
-            if (msg) return msg;
-            msg = parseDuiPayload(raw.payload);
-            if (msg) return msg;
-        }
-        return null;
-    }
-
-    window.addEventListener("message", function (event) {
-        var msg = unwrapMessage(event.data);
-        if (msg && msg.type === "solaris:setPage" && msg.items && msg.items.length) {
-            driven = true;
-            document.body.classList.remove("standalone");
-        }
-        handleMessage(msg);
     });
 
-    /* Direct bridge — Lua ExecuteJS / some executors call this instead of postMessage */
-    window.handleDuiMessage = function (raw) {
-        handleMessage(unwrapMessage(raw));
-    };
+    // Forced reveal for top section
+    const firstSection = tileGrid.querySelector('.category-section');
+    if (firstSection) firstSection.classList.add('reveal');
+}
 
-
-    /* ============================================================================
-     *  STANDALONE — browser preview with local keyboard navigation
-     * ==========================================================================*/
-    var Standalone = (function () {
-        /* A compact sample tree purely for previewing the design in a browser. */
-        var pages = {
-            main: [
-                { label: "Self Options", type: "submenu", target: "self", icon: "fa-solid fa-user" },
-                { label: "Combat Options", type: "submenu", target: "combat", icon: "fa-solid fa-burst" },
-                { label: "Weapon Options", type: "submenu", target: "weaponry", icon: "fa-solid fa-gun" },
-                { label: "Vehicle Options", type: "submenu", target: "vehicle", icon: "fa-solid fa-car" },
-                { label: "Online Options", type: "submenu", target: "players", icon: "fa-solid fa-person" },
-                { label: "Misc Options", type: "submenu", target: "settings", icon: "fa-solid fa-gear" }
-            ],
-            self: [
-                { label: "Status", type: "separator" },
-                { label: "God Mode", type: "toggle", value: false, icon: "fa-solid fa-shield-halved", desc: "Block all incoming damage" },
-                { label: "Infinite Stamina", type: "toggle", value: true, icon: "fa-solid fa-person-running" },
-                { label: "Movement", type: "separator" },
-                { label: "Run Speed", type: "slider", value: 50, min: 0, max: 100, unit: "%", icon: "fa-solid fa-gauge-high" },
-                { label: "Heal", type: "action", icon: "fa-solid fa-kit-medical" }
-            ],
-            visual: [
-                { label: "FOV", type: "slider", value: 50, min: 10, max: 130, icon: "fa-solid fa-video" },
-                { label: "Time", type: "array", value: 1, options: ["Dawn", "Day", "Dusk", "Night"], icon: "fa-solid fa-clock" },
-                { label: "Theme Color", type: "color", value: "#03fcf0", isTheme: true, icon: "fa-solid fa-palette" },
-                { label: "Rainbow Theme", type: "toggle", value: false, isRainbow: true, icon: "fa-solid fa-rainbow" }
-            ],
-            vehicle: [
-                { label: "Username", type: "info", valueStr: "preview", icon: "fa-solid fa-id-badge" },
-                { label: "Repair Vehicle", type: "action", icon: "fa-solid fa-wrench" },
-                { label: "Engine Power", type: "slider", value: 100, min: 0, max: 1000, unit: "%", icon: "fa-solid fa-bolt" }
-            ],
-            settings: [
-                { label: "Display", type: "separator" },
-                { label: "Monitor", type: "array", value: 4, options: ["1920×1080", "2560×1440", "3840×2160", "7680×4320", "Auto"] },
-                { label: "Menu Size", type: "array", value: 1, options: ["Small", "Medium", "Large"] },
-                { label: "Open Menu", type: "info", valueStr: "Alt" },
-                { label: "Discord", type: "action", icon: "fa-brands fa-discord" }
-            ]
-        };
-        var navHistory = ["main"];
-        var indexHistory = [0];
-        var cooldown = false;
-
-        function curPage() { return navHistory[navHistory.length - 1]; }
-        function curItems() { return pages[curPage()]; }
-        function curIdx() { return indexHistory[indexHistory.length - 1]; }
-
-        function firstSelectable(items, start) {
-            var idx = start >= items.length ? 0 : start, loops = 0;
-            while (items[idx] && items[idx].type === "separator") {
-                idx++; if (idx >= items.length) idx = 0;
-                if (++loops > items.length) break;
+/* ---- Intersection Observers ---- */
+function setupObservers() {
+    const revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('reveal');
+            } else {
+                entry.target.classList.remove('reveal');
             }
-            return idx;
-        }
+        });
+    }, { threshold: 0.1 });
 
-        function show(dir) {
-            var items = curItems();
-            var idx = firstSelectable(items, curIdx());
-            indexHistory[indexHistory.length - 1] = idx;
-            View.render(items, idx, dir || null);
-        }
+    const spyObserver = new IntersectionObserver((entries) => {
+        if (isAutoScrolling) return; 
 
-        function navigate(step) {
-            if (cooldown || View.isTransitioning()) return;
-            cooldown = true;
-            var items = curItems();
-            var idx = curIdx(), loops = 0;
-            do {
-                idx += step;
-                if (idx < 0) idx = items.length - 1;
-                else if (idx >= items.length) idx = 0;
-                if (++loops > items.length) break;
-            } while (items[idx] && items[idx].type === "separator");
-            indexHistory[indexHistory.length - 1] = idx;
-            View.setActive(idx);
-            setTimeout(function () { cooldown = false; }, 110);
-        }
-
-        function enter() {
-            if (View.isTransitioning()) return;
-            var item = curItems()[curIdx()];
-            if (!item) return;
-            var idx = curIdx();
-            if (item.type === "submenu" && pages[item.target]) {
-                View.pressFeedback(idx);
-                navHistory.push(item.target);
-                indexHistory.push(0);
-                show("forward");
-            } else if (item.type === "toggle") {
-                item.value = !item.value;
-                View.updateItem(idx, { value: item.value });
-                View.pressFeedback(idx);
-                if (item.isRainbow) { if (item.value) Theme.startRainbow(); else { Theme.stopRainbow(); Theme.set(181, 0, 0); } }
-            } else if (item.type === "action") {
-                View.pressFeedback(idx);
-                View.notify({ title: item.label, text: "Action triggered (preview)", kind: "success" });
-            } else if (item.type === "color" && item.isTheme) {
-                openColor(item, idx);
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const catId = entry.target.getAttribute('data-category');
+                updateActiveNav(catId);
             }
-        }
+        });
+    }, { 
+        root: tileGrid,
+        threshold: 0.5,
+        rootMargin: "-20% 0px -40% 0px"
+    });
 
-        function openColor(item, idx) {
-            var input = document.createElement("input");
-            input.type = "color"; input.value = item.value;
-            input.style.cssText = "position:absolute;opacity:0;pointer-events:none";
-            document.body.appendChild(input);
-            input.click();
-            input.addEventListener("input", function (e) {
-                item.value = e.target.value;
-                View.updateItem(idx, { value: e.target.value });
-                var rgb = Theme.hexToRgb(e.target.value);
-                Theme.set(rgb[0], rgb[1], rgb[2]);
-            });
-            input.addEventListener("change", function () { document.body.removeChild(input); });
-        }
+    document.querySelectorAll('.category-section').forEach(section => {
+        revealObserver.observe(section);
+        spyObserver.observe(section);
+    });
+}
 
-        function back() {
-            if (navHistory.length > 1 && !View.isTransitioning()) {
-                navHistory.pop(); indexHistory.pop();
-                show("backward");
-            }
-        }
+function updateActiveNav(catId) {
+    if (catId === currentCategory) return;
+    
+    currentCategory = catId;
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.toggle('active', item.getAttribute('data-category') === catId);
+    });
+}
 
-        function leftRight(dir) {
-            if (View.isTransitioning()) return;
-            var item = curItems()[curIdx()];
-            if (!item) return;
-            var idx = curIdx();
-            if (item.type === "slider") {
-                var step = (item.max - item.min) <= 20 ? 1 : Math.max(1, Math.round((item.max - item.min) / 50));
-                item.value = dir === "left"
-                    ? Math.max(item.min, item.value - step)
-                    : Math.min(item.max, item.value + step);
-                View.updateItem(idx, { value: item.value });
-            } else if (item.type === "array") {
-                item.value = dir === "left"
-                    ? (item.value > 0 ? item.value - 1 : item.options.length - 1)
-                    : (item.value < item.options.length - 1 ? item.value + 1 : 0);
-                View.updateItem(idx, { value: item.value });
-                View.flashArrow(idx, dir);
-                if (curPage() === "settings" && item.label === "Monitor") {
-                    View.setMonitorResolution(null, item.value + 1);
-                } else if (curPage() === "settings" && item.label === "Menu Size") {
-                    View.setScale(([0.85, 1.0, 1.18])[item.value] || 1.0);
-                }
-            } else if (dir === "left") back();
-            else if (dir === "right" && item.type === "submenu") enter();
-        }
-
-        function start() {
-            document.body.classList.add("standalone");
-            View.renderTabs(
-                [{ id: "main", label: "Main" }, { id: "bypasses", label: "Bypasses" }, { id: "settings", label: "Settings" }],
-                "main",
-                function () { /* preview tabs are inert */ }
-            );
-            View.setHeader({ name: "Solaris", sub: "browser preview", avatar: "https://cdn.discordapp.com/embed/avatars/0.png" });
-            show();
-
-            document.addEventListener("keydown", function (e) {
-                if (driven) return; /* Lua took over */
-                if (e.key === "ArrowUp") { e.preventDefault(); navigate(-1); }
-                else if (e.key === "ArrowDown") { e.preventDefault(); navigate(1); }
-                else if (e.key === "ArrowLeft") { e.preventDefault(); leftRight("left"); }
-                else if (e.key === "ArrowRight") { e.preventDefault(); leftRight("right"); }
-                else if (e.key === "Enter") { e.preventDefault(); if (!e.repeat) enter(); }
-                else if (e.key === "Backspace") { e.preventDefault(); back(); }
-            });
-        }
-
-        function getPages() { return pages; }
-        return { start: start, getPages: getPages };
-    })();
-
-    /* ───────────────────────── Boot ───────────────────────── */
-    function isPreviewMode() {
-        if (/[?&]preview=1\b/.test(window.location.search)) return true;
-        if (/[?&]standalone=1\b/.test(window.location.search)) return true;
-        if (window.location.protocol === "file:") return true;
-        return false;
-    }
-
-    function makeDraggable(el) {
-        if (!el) return;
-        var isDragging = false;
-        var startX, startY, initialX, initialY;
-
-        el.style.pointerEvents = "auto";
-        el.style.userSelect = "none";
-
-        el.addEventListener("mousedown", function(e) {
-            if (e.target.tagName === "INPUT" || e.target.tagName === "BUTTON") return;
-            isDragging = true;
-            startX = e.clientX;
-            startY = e.clientY;
-            var rect = el.getBoundingClientRect();
-            initialX = rect.left;
-            initialY = rect.top;
-            
-            el.style.position = "fixed";
-            el.style.zIndex = "10000";
-            el.style.right = 'auto';
-            el.style.bottom = 'auto';
-            el.style.left = initialX + "px";
-            el.style.top = initialY + "px";
-            el.style.margin = "0";
-            
+function setupEvents() {
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.onclick = (e) => {
             e.preventDefault();
-        });
+            const catId = item.getAttribute('data-category');
+            const target = document.getElementById(`section-${catId}`);
+            
+            if (target) {
+                isAutoScrolling = true; 
+                updateActiveNav(catId);
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                setTimeout(() => { isAutoScrolling = false; }, 1000);
+            }
+        };
+    });
 
-        document.addEventListener("mousemove", function(e) {
-            if (!isDragging) return;
-            var dx = e.clientX - startX;
-            var dy = e.clientY - startY;
-            el.style.left = (initialX + dx) + "px";
-            el.style.top = (initialY + dy) + "px";
-        });
+    searchInput.oninput = (e) => {
+        searchQuery = e.target.value.toLowerCase();
+        renderAll();
+        setupObservers(); 
+    };
+}
 
-        document.addEventListener("mouseup", function() {
-            isDragging = false;
-        });
-    }
+function onInteraction(id, val) {
+    console.log(`[Interaction] ${id} -> ${val}`);
+}
 
-    document.addEventListener("DOMContentLoaded", function () {
-        cacheDom();
-        dom.list.addEventListener("scroll", function () { View.updateScrollbar(); });
+function showNotify(msg) {
+    if (!notification) return;
+    notification.textContent = msg;
+    notification.classList.add('show');
+    clearTimeout(window.notifTimeout);
+    window.notifTimeout = setTimeout(() => {
+        notification.classList.remove('show');
+    }, 2000);
+}
 
-        if (isPreviewMode()) {
-            var pills = document.querySelectorAll(".watermark-pill");
-            for (var pi = 0; pi < pills.length; pi++) makeDraggable(pills[pi]);
-        }
+/* ---- Keybind Listening & Accent Picker Helpers ---- */
+let isListeningForKey = false;
+function startListeningForKey(item, itemEl) {
+    if (isListeningForKey) return;
+    isListeningForKey = true;
 
-        /* Cloudflare DUI = in-game unless ?preview=1 or local file. No loader / keybind gate. */
-        if (!isPreviewMode()) {
-            document.documentElement.classList.add("dui-mode");
-            document.body.classList.add("dui-mode");
-            /* Default menu so in-game is never an empty box before Lua sync */
-            /* Default inject layout — Vanity-style order + glass (until Lua sync) */
-            var defaultMain = [
-                { label: "Self Options", type: "submenu", target: "player", icon: "fa-solid fa-user" },
-                { label: "Combat Options", type: "submenu", target: "combat", icon: "fa-solid fa-burst" },
-                { label: "Weapon Options", type: "submenu", target: "weaponry", icon: "fa-solid fa-gun" },
-                { label: "Vehicle Options", type: "submenu", target: "vehicles", icon: "fa-solid fa-car" },
-                { label: "Online Options", type: "submenu", target: "players", icon: "fa-solid fa-users" },
-                { label: "World Options", type: "submenu", target: "server", icon: "fa-solid fa-earth-americas" },
-                { label: "Misc Options", type: "submenu", target: "assists", icon: "fa-solid fa-toolbox" }
-            ];
-            View.setHeader({ name: "Solaris", sub: "waiting for Lua…", brand: "SOLARIS" });
-            View.renderTabs(
-                [
-                    { id: "main", label: "MAIN" },
-                    { id: "protections", label: "PROTECTIONS" },
-                    { id: "settings", label: "SETTINGS" }
-                ],
-                "main",
-                function () { /* keyboard tabs in Lua */ }
-            );
-            View.render(defaultMain, 1, null);
-            View.setPosition(10, 10);
-            View.setVisible(false);
-            if (dom.pageCount) dom.pageCount.textContent = "↑↓ · Enter · ←";
+    const labelEl = itemEl.querySelector('.function-label');
+
+    labelEl.textContent = "Change Bind [Press Key...]";
+    labelEl.style.color = "var(--accent)";
+
+    function onKeyDown(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (e.key === 'Escape') {
+            window.removeEventListener('keydown', onKeyDown, true);
+            isListeningForKey = false;
+            renderAll();
+            setupObservers();
+            showNotify('Keybind change cancelled');
             return;
         }
 
-        document.body.classList.add("standalone");
-        if (!driven) Standalone.start();
-    });
+        let keyName = e.key;
+        if (keyName === ' ') keyName = 'SPACE';
+        else if (keyName.length === 1) keyName = keyName.toUpperCase();
+        else keyName = keyName.charAt(0).toUpperCase() + keyName.slice(1);
 
-    /* Expose the view so the Lua bridge (or console) can poke it if needed. */
-    window.Solaris = { handleMessage: handleMessage, handleDuiMessage: window.handleDuiMessage, View: View, Theme: Theme };
-})();
+        item.label = `Change Bind [${keyName}]`;
+        
+        window.removeEventListener('keydown', onKeyDown, true);
+        isListeningForKey = false;
+
+        renderAll();
+        setupObservers();
+        onInteraction(item.id, keyName);
+        showNotify(`Keybind updated to: ${keyName}`);
+    }
+
+    window.addEventListener('keydown', onKeyDown, true);
+}
+
+let rgbInterval = null;
+let rgbHue = 0;
+
+function hslToRgb(h, s, l) {
+    s /= 100;
+    l /= 100;
+    const k = n => (n + h / 30) % 12;
+    const a = s * Math.min(l, 1 - l);
+    const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
+    return [Math.round(255 * f(0)), Math.round(255 * f(8)), Math.round(255 * f(4))];
+}
+
+function rgbToHex(r, g, b) {
+    return "#" + [r, g, b].map(x => {
+        const hex = x.toString(16);
+        return hex.length === 1 ? "0" + hex : hex;
+    }).join("");
+}
+
+function startRGBRainbow() {
+    if (rgbInterval) return;
+    
+    function cycle() {
+        const rgbRainbowItem = menuData.settings[0].items.find(i => i.id === 'rgb_rainbow');
+        if (!rgbRainbowItem || !rgbRainbowItem.value) {
+            rgbInterval = null;
+            applyPresetAccent();
+            return;
+        }
+        rgbHue = (rgbHue + 0.7) % 360;
+        const [r, g, b] = hslToRgb(rgbHue, 95, 50);
+        const hex = rgbToHex(r, g, b);
+        
+        const [br, bg, bb] = hslToRgb(rgbHue, 95, 60);
+        const brightHex = rgbToHex(br, bg, bb);
+        
+        setAccentColor(hex, `${r}, ${g}, ${b}`, brightHex);
+        rgbInterval = requestAnimationFrame(cycle);
+    }
+    
+    rgbInterval = requestAnimationFrame(cycle);
+}
+
+function stopRGBRainbow() {
+    applyPresetAccent();
+}
+
+function applyPresetAccent() {
+    const accentItem = menuData.settings[0].items.find(i => i.id === 'menu_accent');
+    const selectedColor = accentItem ? accentItem.value : 'solaris';
+    
+    const colors = {
+        solaris: { hex: '#ff9500', rgb: '255, 149, 0', bright: '#ffb700' },
+        green: { hex: '#22c55e', rgb: '34, 197, 94', bright: '#4ade80' },
+        blue: { hex: '#3b82f6', rgb: '59, 130, 246', bright: '#60a5fa' },
+        purple: { hex: '#a855f7', rgb: '168, 85, 247', bright: '#c084fc' },
+        red: { hex: '#ef4444', rgb: '239, 68, 68', bright: '#f87171' },
+        pink: { hex: '#ec4899', rgb: '236, 72, 153', bright: '#f472b6' },
+        amber: { hex: '#eab308', rgb: '234, 179, 8', bright: '#facc15' },
+        cyan: { hex: '#06b6d4', rgb: '6, 182, 212', bright: '#22d3ee' }
+    };
+    
+    const c = colors[selectedColor] || colors.solaris;
+    setAccentColor(c.hex, c.rgb, c.bright);
+}
+
+function setAccentColor(hex, rgb, brightHex) {
+    document.documentElement.style.setProperty('--accent', hex);
+    document.documentElement.style.setProperty('--accent-rgb', rgb);
+    if (brightHex) {
+        document.documentElement.style.setProperty('--accent-bright', brightHex);
+    }
+}
+
+init();
+
+
+/* ---- FiveM NUI/DUI Hooks Injected during compile ---- */
+window.__sol_suppressClick = false;
+
+window.__solClickAt = function(x, y) {
+    if (window.__sol_suppressClick) return;
+    const el = document.elementFromPoint(x, y);
+    if (!el) return;
+    
+    let target = el;
+    if (el.classList.contains('function-item') && el.querySelector('.toggle-switch')) {
+        target = el.querySelector('.toggle-switch');
+    } else if (el.closest('.nav-item')) {
+        target = el.closest('.nav-item');
+    }
+    
+    const event = new MouseEvent('click', {
+        view: window,
+        bubbles: true,
+        cancelable: true,
+        clientX: x,
+        clientY: y
+    });
+    target.dispatchEvent(event);
+};
+
+function applyStateSync(stateObj) {
+    if (!stateObj) return;
+    for (const [id, value] of Object.entries(stateObj)) {
+        const toggleEl = document.querySelector('.toggle-switch[data-id="' + id + '"]');
+        if (toggleEl) {
+            if (value) {
+                toggleEl.classList.add('on');
+                toggleEl.closest('.function-item').classList.add('toggled-on');
+            } else {
+                toggleEl.classList.remove('on');
+                toggleEl.closest('.function-item').classList.remove('toggled-on');
+            }
+        }
+        
+        for (const catKey in menuData) {
+            const cat = menuData[catKey];
+            const subtabs = Array.isArray(cat) ? cat : (Object.values(cat).filter(v => Array.isArray(v)).flat());
+            for (const group of subtabs) {
+                if (group.items) {
+                    const item = group.items.find(i => i.id === id);
+                    if (item) item.value = value;
+                }
+            }
+        }
+    }
+}
+
+function handleSolarisMessage(data) {
+    if (!data || !data.type) return;
+
+    if (data.type === "solaris:click") {
+        if (window.__solClickAt) window.__solClickAt(data.x, data.y);
+        return;
+    }
+
+    if (data.type === "solaris:visible" || data.type === "solaris:setVisible") {
+        const show = data.visible === true;
+        document.documentElement.classList.add("dui-mode");
+        document.body.classList.add("dui-mode");
+        document.body.classList.toggle("dui-boot", show);
+        document.body.style.display = show ? "flex" : "none";
+        return;
+    }
+
+    if (data.type === "solaris:setState") {
+        applyStateSync(data.state);
+        return;
+    }
+
+    if (data.type === "solaris:init" && data.theme && data.theme.length >= 3) {
+        const r = data.theme[0], g = data.theme[1], b = data.theme[2];
+        setAccentColor(
+            "#" + [r, g, b].map(function (x) {
+                const h = Math.max(0, Math.min(255, x | 0)).toString(16);
+                return h.length === 1 ? "0" + h : h;
+            }).join(""),
+            r + ", " + g + ", " + b,
+            null
+        );
+    }
+}
+
+window.addEventListener("message", function (event) {
+    let data = event.data;
+    if (typeof data === "string") {
+        try { data = JSON.parse(data); } catch (e) { return; }
+    }
+    handleSolarisMessage(data);
+});
+
+window.handleDuiMessage = function (raw) {
+    let data = raw;
+    if (typeof data === "string") {
+        try { data = JSON.parse(data); } catch (e) { return; }
+    }
+    handleSolarisMessage(data);
+};
+
+if (!/[?&]preview=1\b/.test(window.location.search) && window.location.protocol !== "file:") {
+    document.documentElement.classList.add("dui-mode");
+    document.body.classList.add("dui-mode");
+}
+
+let _solClipSeq = 0;
+function solClipboardRelay(payload) {
+    try {
+        _solClipSeq++;
+        payload._seq = _solClipSeq;
+        const s = 'SOLARIS_NUI::' + _solClipSeq + '::' + JSON.stringify(payload);
+        const ta = document.createElement('textarea');
+        ta.value = s;
+        ta.style.position = 'fixed';
+        ta.style.top = '-1000px';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        console.log(s);
+    } catch(e) {}
+}
+
+const originalOnInteraction = window.onInteraction;
+window.onInteraction = function(id, val) {
+    if (originalOnInteraction) originalOnInteraction(id, val);
+    
+    const payload = {
+        id: id,
+        value: val,
+        action: 'interaction'
+    };
+    solClipboardRelay(payload);
+}

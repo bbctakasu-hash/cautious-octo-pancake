@@ -1,22 +1,17 @@
 # Solaris Menu — Cloudflare Pages
 
-Static DUI for the Solaris FiveM menu (`Solaris2.lua`).
+Deploy **all files in this folder together**:
 
-## Files
+| File | Required |
+|------|----------|
+| `index.html` | Entry page (Lua loads site root) |
+| `style.css` | Styles (linked from index.html) |
+| `script.js` | Menu logic + DUI bridge |
 
-| File | Role |
-|------|------|
-| `index.html` | Default entry (Pages root URL) |
-| `interface.html` | Same UI — use if Lua points to `/interface.html` |
-| `styles.css` | All menu styles |
-| `script.js` | View + Lua bridge (`handleDuiMessage`) |
+Source: `C:\Users\markr\Downloads\interface`
 
-## Deploy
-
-Push this entire folder to `main`. Lua should use:
+Lua URL (`Solaris2.lua`):
 
 ```lua
-duiUrl = "https://cautious-octo-pancake.pages.dev/?v=440"
+duiUrl = "https://cautious-octo-pancake.pages.dev/?v=441"
 ```
-
-All four assets above must be deployed together.
