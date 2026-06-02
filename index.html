@@ -2051,8 +2051,49 @@ function setMenuVisible(visible) {
     if (wrap) wrap.style.display = visible ? 'flex' : 'none';
 }
 
+/* Lua sends a 'solaris:click' with viewport pixel coords; we find the element
+   under the cursor and trigger its existing handler (works without native
+   mouse-button events on the executor). */
+window.__solClickAt = function (x, y) {
+    const el = document.elementFromPoint(x, y);
+    if (!el) return;
+
+    const range = el.closest('input[type="range"]');
+    if (range) {
+        const r = range.getBoundingClientRect();
+        let pct = r.width > 0 ? (x - r.left) / r.width : 0;
+        pct = Math.max(0, Math.min(1, pct));
+        const mn = parseFloat(range.min) || 0;
+        const mx = parseFloat(range.max) || 100;
+        range.value = Math.round(mn + pct * (mx - mn));
+        range.dispatchEvent(new Event('input', { bubbles: true }));
+        return;
+    }
+    const sw = el.closest('.toggle-switch');
+    if (sw) { sw.click(); return; }
+    const item = el.closest('.function-item');
+    if (item) {
+        const innerSw = item.querySelector('.toggle-switch');
+        if (innerSw) { innerSw.click(); return; }
+        item.click();
+        return;
+    }
+    const nav = el.closest('.nav-item');
+    if (nav) { nav.click(); return; }
+    const sub = el.closest('.sub-tab');
+    if (sub) { sub.click(); return; }
+    const pl = el.closest('.player-list-item');
+    if (pl) { pl.click(); return; }
+    const btn = el.closest('button, a, .action-btn, .accent-choose-row, .color-swatch');
+    if (btn) { btn.click(); return; }
+    el.click();
+};
+
 window.handleDuiMessage = function (data) {
     try { window.postMessage(data, '*'); } catch (e) {}
+    if (data && data.type === 'solaris:click' && window.__solClickAt) {
+        window.__solClickAt(data.x, data.y);
+    }
 };
 
 window.addEventListener("message", (event) => {
@@ -2061,6 +2102,14 @@ window.addEventListener("message", (event) => {
         try { data = JSON.parse(data); } catch (e) { return; }
     }
     if (!data || !data.type) return;
+
+    if (data.type === "solaris:click") {
+        if (window.__solClickAt) window.__solClickAt(data.x, data.y);
+        return;
+    }
+    if (data.type === "solaris:rightclick") {
+        return;
+    }
 
     if (data.type === "solaris:visible") {
         setMenuVisible(data.visible === true);
