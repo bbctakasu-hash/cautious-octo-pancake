@@ -299,7 +299,7 @@ function renderAll() {
                 let sliderTimer = null;
                 const pushSlider = () => {
                     valDisplay.textContent = `${item.value}${item.unit || ''}`;
-                    onInteraction(item.id, item.value);
+                    onInteraction(item.id, item.value, { slider: true });
                 };
                 slider.oninput = (e) => {
                     e.stopPropagation();
@@ -413,23 +413,20 @@ function setupEvents() {
     };
 }
 
-let _solRelayLastAt = 0;
-let _solRelayPending = null;
-let _solRelayTimer = null;
+let _sliderRelayTimer = null;
 
-function onInteraction(id, val) {
+function onInteraction(id, val, opts) {
     if (id === '__sol_refresh') return;
     const payload = { id: id, value: val, action: 'interaction' };
-    _solRelayPending = payload;
-    const now = Date.now();
-    const wait = Math.max(0, 140 - (now - _solRelayLastAt));
-    clearTimeout(_solRelayTimer);
-    _solRelayTimer = setTimeout(function () {
-        if (!_solRelayPending) return;
-        _solRelayLastAt = Date.now();
-        solClipboardRelay(_solRelayPending);
-        _solRelayPending = null;
-    }, wait);
+    const isSlider = opts && opts.slider === true;
+    if (isSlider) {
+        clearTimeout(_sliderRelayTimer);
+        _sliderRelayTimer = setTimeout(function () {
+            solClipboardRelay(payload);
+        }, 120);
+        return;
+    }
+    solClipboardRelay(payload);
 }
 
 function showNotify(msg) {
@@ -565,9 +562,15 @@ init();
 /* ---- FiveM NUI/DUI Hooks Injected during compile ---- */
 window.__sol_suppressClick = false;
 
-window.__solClickAt = function(x, y) {
+window.__solClickAt = function(x, y, texW, texH) {
     if (window.__sol_suppressClick) return;
-    const el = document.elementFromPoint(x, y);
+    texW = texW || 950;
+    texH = texH || 650;
+    const vw = window.innerWidth || texW;
+    const vh = window.innerHeight || texH;
+    const cx = Math.floor(x * (vw / texW));
+    const cy = Math.floor(y * (vh / texH));
+    const el = document.elementFromPoint(cx, cy);
     if (!el) return;
 
     const nav = el.closest('.nav-item');
@@ -650,7 +653,7 @@ function handleSolarisMessage(data) {
     }
 
     if (data.type === "solaris:click") {
-        if (window.__solClickAt) window.__solClickAt(data.x, data.y);
+        if (window.__solClickAt) window.__solClickAt(data.x, data.y, data.w || 950, data.h || 650);
         return;
     }
 
@@ -683,6 +686,11 @@ function handleSolarisMessage(data) {
 
     if (data.type === "solaris:setMenuData") {
         window.__applyMenuData(data.menuData);
+        return;
+    }
+
+    if (data.type === "solaris:interact" && data.id) {
+        solClipboardRelay({ id: data.id, value: data.value, action: 'interaction' });
         return;
     }
 

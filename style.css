@@ -709,6 +709,16 @@ body.dui-mode .tile-header span {
 body.dui-mode .function-item {
     padding: 10px 0;
     min-height: 36px;
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+body.dui-mode .nav-item,
+body.dui-mode .toggle-switch,
+body.dui-mode input[type="range"],
+body.dui-mode .cycle-val {
+    pointer-events: auto;
+    cursor: pointer;
 }
 
 body.dui-mode .function-label {
