@@ -1,17 +1,17 @@
 # Solaris Menu — Cloudflare Pages
 
-Deploy **all files in this folder together**:
+Deploy **only these files** (tile UI + DUI bridge):
 
-| File | Required |
-|------|----------|
-| `index.html` | Entry page (Lua loads site root) |
-| `style.css` | Styles (linked from index.html) |
-| `script.js` | Menu logic + DUI bridge |
+| File | Role |
+|------|------|
+| `index.html` | Menu shell (sidebar + tiles) |
+| `style.css` | Teal tile theme |
+| `script.js` | Renders tiles, `solaris:setMenuData`, clipboard bridge to Lua |
 
-Source: `C:\Users\markr\Downloads\interface`
+Source of truth: `D:\menu\dui\` — copy here before push.
 
-Lua URL (`Solaris2.lua`):
+Lua (`Solaris2.lua`):
 
 ```lua
-duiUrl = "https://cautious-octo-pancake.pages.dev/?v=441"
+duiUrl = "https://cautious-octo-pancake.pages.dev/?v=452"
 ```

@@ -3,47 +3,107 @@
     Handles rendering, search, navigation and UI interactions.
 */
 
-/* Filled from Lua MenuDef via solaris:setMenuData (fallback = instant UI) */
+/* opt_N ids match Solaris2.lua TileMenu export order (MenuDef) */
 const MENU_FALLBACK = {
     player: [
         { group: "Character", icon: "fa-solid fa-shield-halved", items: [
-            { id: "revive", label: "Revive", type: "action" },
-            { id: "suicide", label: "Suicide", type: "action" },
-            { id: "health", label: "Set Health", type: "slider", min: 0, max: 200, value: 200, unit: "" },
-            { id: "armour", label: "Set Armour", type: "slider", min: 0, max: 100, value: 0, unit: "" },
-            { id: "clean_wounds", label: "Clear Wounds", type: "action" },
-            { id: "open_doors", label: "Open Locked Doors", type: "action" }
+            { id: "opt_1", label: "Revive", type: "action" },
+            { id: "opt_2", label: "Suicide", type: "action" },
+            { id: "opt_3", label: "Set Health", type: "slider", min: 0, max: 200, value: 100, unit: "" },
+            { id: "opt_4", label: "Set Armour", type: "slider", min: 0, max: 100, value: 0, unit: "" },
+            { id: "opt_5", label: "Clear Wounds", type: "action" },
+            { id: "opt_6", label: "Open Locked Doors", type: "action" }
         ]},
         { group: "Survival", icon: "fa-solid fa-heart", items: [
-            { id: "godmode", label: "God Mode", type: "toggle", value: false },
-            { id: "semiGod", label: "Semi God Mode", type: "toggle", value: false },
-            { id: "autoRevive", label: "Auto Revive", type: "toggle", value: false },
-            { id: "fakeDead", label: "Fake Dead", type: "toggle", value: false }
+            { id: "opt_7", label: "God Mode", type: "toggle", value: false },
+            { id: "opt_8", label: "Semi God Mode", type: "toggle", value: false },
+            { id: "opt_9", label: "Auto Revive", type: "toggle", value: false },
+            { id: "opt_10", label: "Fake Dead", type: "toggle", value: false }
         ]},
         { group: "Powers", icon: "fa-solid fa-bolt", items: [
-            { id: "invisible", label: "Invisible", type: "toggle", value: false },
-            { id: "fastPunch", label: "Fast Punch", type: "toggle", value: false },
-            { id: "superJump", label: "Super Jump", type: "toggle", value: false },
-            { id: "laserEyes", label: "Laser Eyes", type: "toggle", value: false }
+            { id: "opt_11", label: "Invisible", type: "toggle", value: false },
+            { id: "opt_12", label: "Fast Punch", type: "toggle", value: false },
+            { id: "opt_13", label: "Turn Tiny", type: "toggle", value: false },
+            { id: "opt_14", label: "Infinite Stamina", type: "toggle", value: false },
+            { id: "opt_15", label: "Infinite Oxygen", type: "toggle", value: false },
+            { id: "opt_16", label: "Fast Run", type: "toggle", value: false },
+            { id: "opt_17", label: "Super Jump", type: "toggle", value: false },
+            { id: "opt_18", label: "Laser Eyes", type: "toggle", value: false }
         ]},
-        { group: "Noclip", icon: "fa-solid fa-person-running", items: [
-            { id: "noclip", label: "Noclip", type: "toggle", value: false },
-            { id: "noclipMode", label: "Noclip Mode", type: "cycle", options: ["Normal", "Invisible", "Full Invisible"], value: 0 },
-            { id: "noclipSpeed", label: "Noclip Speed", type: "slider", min: 1, max: 50, value: 1, unit: "" }
+        { group: "Movement", icon: "fa-solid fa-person-running", items: [
+            { id: "opt_19", label: "Noclip", type: "toggle", value: false },
+            { id: "opt_20", label: "Noclip Mode", type: "cycle", options: ["Normal", "Invisible", "Full Invisible"], value: 0 },
+            { id: "opt_21", label: "Noclip Speed", type: "slider", min: 1, max: 50, value: 10, unit: "" },
+            { id: "opt_22", label: "Solo Session", type: "toggle", value: false },
+            { id: "opt_23", label: "Auto TP Waypoint", type: "toggle", value: false },
+            { id: "opt_24", label: "TP to Waypoint", type: "action" },
+            { id: "opt_25", label: "TP Forward 5m", type: "action" }
         ]}
     ],
     combat: [
         { group: "Ragebot", icon: "fa-solid fa-crosshairs", items: [
-            { id: "ragebot", label: "Enable Ragebot", type: "toggle", value: false },
-            { id: "ragebotMagicBullet", label: "Magic Bullet", type: "toggle", value: false },
-            { id: "ragebotFov", label: "FOV Circle", type: "slider", min: 20, max: 300, value: 120, unit: "px" }
+            { id: "opt_26", label: "Enable Ragebot", type: "toggle", value: false },
+            { id: "opt_27", label: "Magic Bullet", type: "toggle", value: false },
+            { id: "opt_28", label: "Target Dead", type: "toggle", value: true },
+            { id: "opt_29", label: "FOV Circle", type: "slider", min: 20, max: 300, value: 80, unit: "px" }
+        ]},
+        { group: "Destroyer", icon: "fa-solid fa-skull-crossbones", items: [
+            { id: "opt_30", label: "Destroyer Mode", type: "toggle", value: false },
+            { id: "opt_31", label: "Target Dead", type: "toggle", value: true },
+            { id: "opt_32", label: "Target NPCs", type: "toggle", value: true },
+            { id: "opt_33", label: "FOV Circle", type: "slider", min: 20, max: 300, value: 80, unit: "px" },
+            { id: "opt_34", label: "Shoot Cars (Weapon)", type: "toggle", value: false }
         ]},
         { group: "Shooting", icon: "fa-solid fa-gun", items: [
-            { id: "noRecoil", label: "Remove Recoil", type: "toggle", value: false },
-            { id: "rpgMode", label: "RPG Mode", type: "toggle", value: false },
-            { id: "laserEyes", label: "Laser Eyes", type: "toggle", value: false }
+            { id: "opt_35", label: "Remove Recoil", type: "toggle", value: false },
+            { id: "opt_36", label: "RPG Mode", type: "toggle", value: false },
+            { id: "opt_37", label: "Explosion on Hit", type: "toggle", value: false },
+            { id: "opt_38", label: "Shoot Vehicles", type: "toggle", value: false },
+            { id: "opt_39", label: "Laser Eyes", type: "toggle", value: false },
+            { id: "opt_40", label: "Shooting Mode (FA)", type: "toggle", value: false }
         ]}
-    ]
+    ],
+    weaponry: [
+        { group: "Spawner", icon: "fa-solid fa-plus", items: [
+            { id: "opt_41", label: "Give ALL Weapons", type: "action" },
+            { id: "opt_42", label: "Ammo Amount", type: "slider", min: 1, max: 9999, value: 999, unit: "" },
+            { id: "opt_43", label: "Spawn Named Weapon", type: "action" },
+            { id: "opt_44", label: "Pistol", type: "action" },
+            { id: "opt_45", label: "Assault Rifle", type: "action" },
+            { id: "opt_46", label: "RPG", type: "action" }
+        ]},
+        { group: "My Weapons", icon: "fa-solid fa-gun", items: [
+            { id: "opt_47", label: "Fill Ammo", type: "action" },
+            { id: "opt_48", label: "Give Full Attachments", type: "action" },
+            { id: "opt_49", label: "Remove Current Weapon", type: "action" },
+            { id: "opt_50", label: "Remove All Weapons", type: "action" },
+            { id: "opt_51", label: "Infinite Ammo", type: "toggle", value: false },
+            { id: "opt_52", label: "No Reload", type: "toggle", value: false },
+            { id: "opt_53", label: "Remove Recoil", type: "toggle", value: false },
+            { id: "opt_54", label: "RGB Weapon", type: "toggle", value: false },
+            { id: "opt_55", label: "Weapon Size", type: "slider", min: 1, max: 10, value: 1, unit: "x" }
+        ]},
+        { group: "Crosshair", icon: "fa-solid fa-crosshairs", items: [
+            { id: "opt_56", label: "Enable Crosshair", type: "toggle", value: false },
+            { id: "opt_57", label: "Crosshair Type", type: "cycle", options: ["Simple Cross", "Dot", "Circle", "T-Shape", "X-Shape"], value: 0 },
+            { id: "opt_58", label: "Size", type: "slider", min: 1, max: 50, value: 10, unit: "px" },
+            { id: "opt_59", label: "Offset X", type: "slider", min: -50, max: 50, value: 1, unit: "px" },
+            { id: "opt_60", label: "Offset Y", type: "slider", min: -50, max: 50, value: 1, unit: "px" }
+        ]}
+    ],
+    vehicles: [
+        { group: "Your Vehicle", icon: "fa-solid fa-car", items: [
+            { id: "opt_61", label: "Easy Handling", type: "toggle", value: false },
+            { id: "opt_62", label: "Horn Boost", type: "toggle", value: false },
+            { id: "opt_63", label: "Auto Repair", type: "toggle", value: false },
+            { id: "opt_64", label: "Infinite Fuel", type: "toggle", value: false }
+        ]}
+    ],
+    players: [],
+    server: [],
+    assists: [],
+    protections: [],
+    settings: []
 };
 
 const menuData = {};
@@ -605,6 +665,12 @@ function handleSolarisMessage(data) {
 
     if (data.type === "solaris:setMenuData") {
         window.__applyMenuData(data.menuData);
+        return;
+    }
+
+    if (data.type === "solaris:notify") {
+        const msg = [data.title, data.text].filter(Boolean).join(": ");
+        if (msg) showNotify(msg);
         return;
     }
 }
