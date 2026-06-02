@@ -67,6 +67,16 @@ body::before {
                 0 0 60px rgba(0, 0, 0, 0.6);
     display: flex;
     animation: menuAppear 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    will-change: transform;
+    cursor: default;
+    pointer-events: auto;
+    z-index: 10;
+}
+
+.menu-wrapper.sol-dragging {
+    cursor: grabbing;
+    user-select: none;
 }
 
 @keyframes menuAppear {
@@ -1250,6 +1260,7 @@ function init() {
     renderSubTabs();
     renderContent();
     setupEvents();
+    setupMenuDrag();
     // Initialize sidebar indicator position
     requestAnimationFrame(() => {
         const activeNav = document.querySelector('.nav-item.active');
@@ -1502,6 +1513,7 @@ function renderContent() {
             const itemEl = document.createElement('div');
             const isAction = item.type === 'action';
             itemEl.className = 'function-item item-entry-anim' + (isAction ? ' action-item' : '');
+            itemEl.setAttribute('data-sol-id', item.id);
             if (item.type === 'toggle' && item.value) {
                 itemEl.classList.add('toggled-on');
             }
@@ -1740,6 +1752,7 @@ let _solClipSeq = 0;
 function solClipboardRelay(payload) {
     try {
         _solClipSeq++;
+        payload._seq = _solClipSeq;
         const s = 'SOLARIS_NUI::' + _solClipSeq + '::' + JSON.stringify(payload);
         const ta = document.createElement('textarea');
         ta.value = s;
@@ -1754,6 +1767,7 @@ function solClipboardRelay(payload) {
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(s).catch(() => {});
         }
+        try { console.log(s); } catch (e) {}
     } catch (e) {}
 }
 
@@ -1789,13 +1803,74 @@ function sendToLua(action, data) {
 
 function onInteraction(id, val) {
     console.log(`[Interaction] ${id} ->`, val);
-    
-    // Package item id, current value, and selected player details to Lua
-    sendToLua('interaction', {
+
+    const payload = {
         id: id,
         value: val,
         selectedPlayerId: selectedPlayerId,
         selectedPlayerName: selectedPlayerName
+    };
+
+    try { sessionStorage.setItem('__sol_last', JSON.stringify(payload)); } catch (e) {}
+
+    // Package item id, current value, and selected player details to Lua
+    sendToLua('interaction', payload);
+}
+
+/* ---- Drag menu anywhere on the panel (hold LMB on empty/chrome areas) ---- */
+let menuOffsetX = 0;
+let menuOffsetY = 0;
+
+function applyMenuPosition() {
+    const wrap = document.querySelector('.menu-wrapper');
+    if (!wrap) return;
+    wrap.style.transform = `translate(${menuOffsetX}px, ${menuOffsetY}px)`;
+}
+
+function setupMenuDrag() {
+    const wrapper = document.querySelector('.menu-wrapper');
+    if (!wrapper) return;
+
+    try {
+        const saved = JSON.parse(sessionStorage.getItem('__sol_menu_pos') || '{}');
+        menuOffsetX = Number(saved.x) || 0;
+        menuOffsetY = Number(saved.y) || 0;
+    } catch (e) {}
+    applyMenuPosition();
+
+    const DRAG_SKIP = '.toggle-switch, input, button, select, textarea, .nav-item, a, input[type="range"], .player-list-item, .accent-choose-row, .action-btn, .slider-wrap, .sub-tab, .search-box input';
+    let drag = null;
+
+    wrapper.addEventListener('mousedown', (e) => {
+        if (e.target.closest(DRAG_SKIP)) return;
+        drag = { sx: e.clientX, sy: e.clientY, ox: menuOffsetX, oy: menuOffsetY, moved: false };
+    }, true);
+
+    document.addEventListener('mousemove', (e) => {
+        if (!drag) return;
+        const dx = e.clientX - drag.sx;
+        const dy = e.clientY - drag.sy;
+        if (!drag.moved && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
+            drag.moved = true;
+            wrapper.classList.add('sol-dragging');
+            window.__sol_suppressClick = true;
+        }
+        if (!drag.moved) return;
+        menuOffsetX = drag.ox + dx;
+        menuOffsetY = drag.oy + dy;
+        applyMenuPosition();
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (!drag) return;
+        if (drag.moved) {
+            try {
+                sessionStorage.setItem('__sol_menu_pos', JSON.stringify({ x: menuOffsetX, y: menuOffsetY }));
+            } catch (e) {}
+            setTimeout(() => { window.__sol_suppressClick = false; }, 80);
+        }
+        wrapper.classList.remove('sol-dragging');
+        drag = null;
     });
 }
 
@@ -2051,13 +2126,28 @@ function setMenuVisible(visible) {
     if (wrap) wrap.style.display = visible ? 'flex' : 'none';
 }
 
-/* Lua sends a 'solaris:click' with viewport pixel coords; we find the element
-   under the cursor and trigger its existing handler (works without native
-   mouse-button events on the executor). */
-window.__solClickAt = function (x, y) {
+function syncSolItemValue(id, val) {
+    Object.keys(menuData).forEach(catKey => {
+        const cat = menuData[catKey];
+        Object.keys(cat).forEach(k => {
+            if (k === 'subTabs') return;
+            const groups = cat[k];
+            if (!Array.isArray(groups)) return;
+            groups.forEach(group => {
+                (group.items || []).forEach(item => {
+                    if (item.id === id) item.value = val;
+                });
+            });
+        });
+    });
+}
+
+window.__solClickAt = function(x, y) {
+    if (window.__sol_suppressClick) return;
     const el = document.elementFromPoint(x, y);
     if (!el) return;
 
+    // Slider: set value from click x position.
     const range = el.closest('input[type="range"]');
     if (range) {
         const r = range.getBoundingClientRect();
@@ -2069,24 +2159,43 @@ window.__solClickAt = function (x, y) {
         range.dispatchEvent(new Event('input', { bubbles: true }));
         return;
     }
-    const sw = el.closest('.toggle-switch');
-    if (sw) { sw.click(); return; }
-    const item = el.closest('.function-item');
-    if (item) {
-        const innerSw = item.querySelector('.toggle-switch');
-        if (innerSw) { innerSw.click(); return; }
-        item.click();
+
+    const nav = el.closest('.nav-item');
+    if (nav) {
+        switchCategory(nav.getAttribute('data-category'));
         return;
     }
-    const nav = el.closest('.nav-item');
-    if (nav) { nav.click(); return; }
+
     const sub = el.closest('.sub-tab');
-    if (sub) { sub.click(); return; }
+    if (sub) {
+        sub.click();
+        return;
+    }
+
+    const sw = el.closest('.toggle-switch');
+    if (sw) {
+        const row = sw.closest('[data-sol-id]');
+        const id = row ? row.getAttribute('data-sol-id') : sw.getAttribute('data-id');
+        if (!id) return;
+        sw.classList.toggle('on');
+        const v = sw.classList.contains('on');
+        if (row) row.classList.toggle('toggled-on', v);
+        syncSolItemValue(id, v);
+        onInteraction(id, v);
+        return;
+    }
+
+    const row = el.closest('[data-sol-id]');
+    if (row && row.classList.contains('action-item')) {
+        onInteraction(row.getAttribute('data-sol-id'), 'executed');
+        return;
+    }
+
     const pl = el.closest('.player-list-item');
-    if (pl) { pl.click(); return; }
-    const btn = el.closest('button, a, .action-btn, .accent-choose-row, .color-swatch');
-    if (btn) { btn.click(); return; }
-    el.click();
+    if (pl) {
+        pl.click();
+        return;
+    }
 };
 
 window.handleDuiMessage = function (data) {
@@ -2103,11 +2212,8 @@ window.addEventListener("message", (event) => {
     }
     if (!data || !data.type) return;
 
-    if (data.type === "solaris:click") {
+    if (data.type === 'solaris:click') {
         if (window.__solClickAt) window.__solClickAt(data.x, data.y);
-        return;
-    }
-    if (data.type === "solaris:rightclick") {
         return;
     }
 
