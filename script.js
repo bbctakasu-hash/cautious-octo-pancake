@@ -648,7 +648,9 @@ window.handleDuiMessage = function (raw) {
 if (!/[?&]preview=1\b/.test(window.location.search) && window.location.protocol !== "file:") {
     document.documentElement.classList.add("dui-mode");
     document.body.classList.add("dui-mode");
-    document.body.style.display = "none";
+    document.body.style.display = "flex";
+    document.body.style.visibility = "visible";
+    document.body.style.opacity = "1";
     applyDisplayScale(1, 1);
 }
 
