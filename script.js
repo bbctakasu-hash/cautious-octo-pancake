@@ -558,8 +558,33 @@ function applyStateSync(stateObj) {
     }
 }
 
+function readUiVar(name, fallback) {
+    const v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name));
+    return (isNaN(v) || v <= 0) ? fallback : v;
+}
+
+function applyDisplayScale(menuScale, monitorScale) {
+    const menu = Math.max(0.85, Math.min(1.35, Number(menuScale) || 1));
+    const mon = Math.max(0.85, Math.min(4.8, Number(monitorScale) || 1));
+    document.documentElement.style.setProperty("--menu-scale", String(menu));
+    document.documentElement.style.setProperty("--monitor-scale", String(mon));
+    /* DUI bitmap is fixed size; only subtle UI zoom — screen size is Lua DrawSprite */
+    const zoom = Math.max(0.92, Math.min(1.08, menu));
+    document.documentElement.style.setProperty("--ui-zoom", String(zoom));
+}
+
 function handleSolarisMessage(data) {
     if (!data || !data.type) return;
+
+    if (data.type === "solaris:setScale" && data.scale != null) {
+        applyDisplayScale(data.scale, readUiVar("--monitor-scale", 1));
+        return;
+    }
+
+    if (data.type === "solaris:setMonitorResolution") {
+        applyDisplayScale(readUiVar("--menu-scale", 1), data.scale);
+        return;
+    }
 
     if (data.type === "solaris:click") {
         if (window.__solClickAt) window.__solClickAt(data.x, data.y);
@@ -580,7 +605,8 @@ function handleSolarisMessage(data) {
         return;
     }
 
-    if (data.type === "solaris:init" && data.theme && data.theme.length >= 3) {
+    if (data.type === "solaris:init") {
+        if (data.theme && data.theme.length >= 3) {
         const r = data.theme[0], g = data.theme[1], b = data.theme[2];
         setAccentColor(
             "#" + [r, g, b].map(function (x) {
@@ -590,6 +616,8 @@ function handleSolarisMessage(data) {
             r + ", " + g + ", " + b,
             null
         );
+        }
+        return;
     }
 }
 
@@ -612,6 +640,7 @@ window.handleDuiMessage = function (raw) {
 if (!/[?&]preview=1\b/.test(window.location.search) && window.location.protocol !== "file:") {
     document.documentElement.classList.add("dui-mode");
     document.body.classList.add("dui-mode");
+    applyDisplayScale(1, 1);
 }
 
 let _solClipSeq = 0;
